@@ -43,5 +43,16 @@ set listchars=tab:\ ¬,trail:.
 " Enabling mouse
 set mouse=a
 
+" Abbreviations to keep me from going insane
+iab lenght length
+iab widht width
+iab heigth height
+cab W w
+cab Q q
+cab Wq wq
+cab WQ wq
+cab qw wq
+cab X x
+
 " Loading the other files from the repository
 source ~/.vim/keymaps
