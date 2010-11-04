@@ -14,3 +14,9 @@ imap <C-e> <C-o>$
 
 " Word substitution on insert mode
 imap <C-w> <C-o>dw
+
+" NERDTree!
+nmap <silent> <C-e> :NERDTreeToggle<CR>
+
+" BufferExplorer
+nmap <silent> <C-b> :BufExplorer<CR>
