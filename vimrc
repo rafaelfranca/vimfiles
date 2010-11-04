@@ -59,3 +59,6 @@ source ~/.vim/keymaps
 
 " Load all Pathogen Bundles
 call pathogen#runtime_append_all_bundles()
+
+" Snipmate setup
+source ~/.vim/snippets/support_functions.vim
