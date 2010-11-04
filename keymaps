@@ -5,9 +5,12 @@ nnoremap Y y$
 nnoremap <silent> <F5> :let _s=@/<Bar>:%s/\s\+$//e<Bar>:let @/=_s<Bar>:nohl<CR>:retab<CR>
 
 " Moving Emacs-likey!
-noremap <C-f> <C-o>l
-noremap <C-b> <C-o>h
-noremap <C-n> <C-o>j
-noremap <C-p> <C-o>k
-noremap <C-a> <C-o>0
-noremap <C-e> <C-o>$
+imap <C-f> <C-o>l
+imap <C-b> <C-o>h
+imap <C-n> <C-o>j
+imap <C-p> <C-o>k
+imap <C-a> <C-o>0
+imap <C-e> <C-o>$
+
+" Word substitution on insert mode
+imap <C-w> <C-o>dw
