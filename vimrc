@@ -56,3 +56,6 @@ cab X x
 
 " Loading the other files from the repository
 source ~/.vim/keymaps
+
+" Load all Pathogen Bundles
+call pathogen#runtime_append_all_bundles()
