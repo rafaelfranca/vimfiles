@@ -19,7 +19,9 @@ set nowrap
 set visualbell t_vb=
 
 " Statusline setup
-set statusline=%f
+set statusline=%f\  " Filename
+set statusline+=%c, " Cursor Column
+set statusline+=%l/%L " Cursor Line/Total Lines
 set laststatus=2
 
 " Indentation Settings
