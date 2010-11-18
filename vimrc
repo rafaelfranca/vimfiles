@@ -67,3 +67,6 @@ call pathogen#runtime_append_all_bundles()
 
 " Snipmate setup
 source ~/.vim/snippets/support_functions.vim
+
+" Ragtag setup
+let g:ragtag_global_maps = 1
