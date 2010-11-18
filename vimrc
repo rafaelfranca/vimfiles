@@ -28,6 +28,11 @@ set sts=2
 set expandtab
 set autoindent
 
+
+" Loading indent and plugins depending on the filetype
+filetype plugin on
+filetype indent on
+
 " Folding Settings
 set nofoldenable
 
