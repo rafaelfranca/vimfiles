@@ -22,3 +22,6 @@
 [submodule "bundle/ragtag"]
 	path = bundle/ragtag
 	url = git://github.com/tpope/vim-ragtag.git
+[submodule "bundle/html5"]
+	path = bundle/html5
+	url = git://github.com/sryche/html5-vim-minimal.git
