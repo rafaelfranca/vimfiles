@@ -25,11 +25,5 @@ nmap <silent> <C-b> :BufExplorer<CR>
 nmap <Tab> gt
 nmap <S-Tab> gT
 
-" Key mapping for textmate-like indentation
-nmap <D-[> <<
-nmap <D-]> >>
-vmap <D-[> <gv
-vmap <D-]> >gv
-
 " Clearing search results
 nmap <silent> <C-l> :nohl<CR>
