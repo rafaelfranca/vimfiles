@@ -5,8 +5,8 @@ set guifont=Monaco:h14
 set guioptions-=T
 
 " Removing scrollbars (GTFO, bitch.)
+set guioptions-=L
 set guioptions-=r
-set guioptions-=R
 
 " Key mapping for textmate-like indentation
 nmap <D-[> <<
