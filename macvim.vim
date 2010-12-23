@@ -6,9 +6,7 @@ set guioptions-=T
 
 " Removing scrollbars (GTFO, bitch.)
 set guioptions-=r
-
-" Setting Mac Option-key to behave like Meta Key
-set invmmta
+set guioptions-=R
 
 " Key mapping for textmate-like indentation
 nmap <D-[> <<
