@@ -1,3 +1,9 @@
+" Necessary on some Linux distros for pathogen to properly load bundles
+filetype off
+
+" Load all Pathogen Bundles
+call pathogen#runtime_append_all_bundles()
+
 " Set vim-specific functions available, breaking compatibility with vi
 set nocompatible
 
@@ -68,9 +74,6 @@ source ~/.vim/keymaps.vim
 if has("gui_mac") || has("gui_macvim")
   source ~/.vim/macvim.vim
 endif
-
-" Load all Pathogen Bundles
-call pathogen#runtime_append_all_bundles()
 
 " Snipmate setup
 source ~/.vim/snippets/support_functions.vim
