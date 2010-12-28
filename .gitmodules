@@ -16,9 +16,6 @@
 [submodule "bundle/rails"]
 	path = bundle/rails
 	url = git://github.com/tpope/vim-rails.git
-[submodule "bundle/autoclose"]
-	path = bundle/autoclose
-	url = git://github.com/sryche/autoclose-vim.git
 [submodule "bundle/ragtag"]
 	path = bundle/ragtag
 	url = git://github.com/tpope/vim-ragtag.git
