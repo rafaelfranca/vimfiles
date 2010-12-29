@@ -80,3 +80,12 @@ source ~/.vim/snippets/support_functions.vim
 
 " Ragtag setup
 let g:ragtag_global_maps = 1
+
+" Removing trailing spaces from ruby files (by @bbcoimbra)
+function! RemoveTraillingSpaces()
+        let cursor_pos = getpos(".")
+        %s/[ \t]*$//g
+        call setpos(".", cursor_pos)
+endfunction
+
+au BufWrite *.rb :call RemoveTraillingSpaces()
