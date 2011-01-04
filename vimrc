@@ -163,4 +163,4 @@ function! RemoveTraillingSpaces()
         call setpos(".", cursor_pos)
 endfunction
 
-au BufWrite *.rb :call RemoveTraillingSpaces()
+nnoremap <silent> <F5> :call RemoveTraillingSpaces()<CR>
