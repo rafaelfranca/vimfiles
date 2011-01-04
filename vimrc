@@ -28,6 +28,8 @@ set visualbell t_vb=
 set statusline=%f\  " Filename
 set statusline+=%c, " Cursor Column
 set statusline+=%l/%L " Cursor Line/Total Lines
+set statusline+=%{StatuslineTrailingSpaceWarning()}
+
 set laststatus=2
 
 " Indentation Settings
@@ -131,6 +133,28 @@ source ~/.vim/snippets/support_functions.vim
 
 " Ragtag setup
 let g:ragtag_global_maps = 1
+
+"recalculate the trailing whitespace warning when idle, and after saving
+autocmd cursorhold,bufwritepost * unlet! b:statusline_trailing_space_warning
+
+"return '[\s]' if trailing white space is detected
+"return '' otherwise
+function! StatuslineTrailingSpaceWarning()
+    if !exists("b:statusline_trailing_space_warning")
+
+        if !&modifiable
+            let b:statusline_trailing_space_warning = ''
+            return b:statusline_trailing_space_warning
+        endif
+
+        if search('\s\+$', 'nw') != 0
+            let b:statusline_trailing_space_warning = '[\s]'
+        else
+            let b:statusline_trailing_space_warning = ''
+        endif
+    endif
+    return b:statusline_trailing_space_warning
+endfunction
 
 " Removing trailing spaces from ruby files (by @bbcoimbra)
 function! RemoveTraillingSpaces()
