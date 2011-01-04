@@ -27,3 +27,6 @@ nmap <S-Tab> gT
 
 " Clearing search results
 nmap <silent> <C-l> :nohl<CR>
+
+" Changing double quotes (") to single quotes (')
+nmap <silent>css cs"'
