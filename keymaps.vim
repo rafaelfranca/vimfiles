@@ -30,3 +30,5 @@ nmap <silent> <C-l> :nohl<CR>
 
 " Changing double quotes (") to single quotes (')
 nmap <silent>css cs"'
+" And the other way around
+nmap <silent>csd cs'"
