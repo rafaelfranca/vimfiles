@@ -9,7 +9,7 @@
 	url = git://github.com/rafaelfranca/snipmate-snippets.git
 [submodule "bundle/nerdtree"]
 	path = bundle/nerdtree
-	url = git://github.com/wycats/nerdtree.git
+	url = git://github.com/scrooloose/nerdtree.git
 [submodule "bundle/bufexplorer"]
 	path = bundle/bufexplorer
 	url = git://github.com/markabe/bufexplorer.git
