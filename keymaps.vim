@@ -32,7 +32,7 @@ nmap <silent> <C-l> :nohl<CR>
 nmap <silent>css cs"'
 " And the other way around
 nmap <silent>csd cs'"
-"
+
 " Tabularize shortcuts
 nmap <Leader>th :Tabularize /=><CR>
 vmap <Leader>th :Tabularize /=><CR>
@@ -46,3 +46,7 @@ vmap <Leader>t, :Tabularize /,\zs<CR>
 " command r and Command R
 autocmd User Rails nnoremap <buffer> <D-r> :<C-U>Rake<CR>
 autocmd User Rails nnoremap <buffer> <D-R> :<C-U>.Rake<CR>
+
+" FuzzyFinder
+nmap <C-f> :FufCoverageFile<cr>
+nmap <C-f> <C-o>:FufCoverageFile<cr>

@@ -77,6 +77,9 @@ cab WQ wq
 cab qw wq
 cab X x
 
+" FuzzyFinder configuration
+let g:fuf_coveragefile_globPatterns=['**/*.h', '**/*.c', '**/*.rb', '**/*.js', '**/*.erb', '**/*.css']
+
 " Loading the other files from the repository
 source ~/.vim/keymaps.vim
 
