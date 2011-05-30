@@ -29,6 +29,7 @@ set statusline=%f\  " Filename
 set statusline+=%c, " Cursor Column
 set statusline+=%l/%L " Cursor Line/Total Lines
 set statusline+=%{StatuslineTrailingSpaceWarning()}
+set statusline+=%{SyntasticStatuslineFlag()}
 
 set laststatus=2
 
