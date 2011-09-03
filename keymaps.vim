@@ -28,11 +28,6 @@ nmap <S-Tab> gT
 " Clearing search results
 nmap <silent> <C-l> :nohl<CR>
 
-" Changing double quotes (") to single quotes (')
-nmap <silent>css cs"'
-" And the other way around
-nmap <silent>csd cs'"
-
 " Tabularize shortcuts
 nmap <Leader>th :Tabularize /=><CR>
 vmap <Leader>th :Tabularize /=><CR>
@@ -42,10 +37,6 @@ nmap <Leader>t: :Tabularize /:\zs<CR>
 vmap <Leader>t: :Tabularize /:\zs<CR>
 nmap <Leader>t, :Tabularize /,\zs<CR>
 vmap <Leader>t, :Tabularize /,\zs<CR>
-
-" command r and Command R
-autocmd User Rails nnoremap <buffer> <D-r> :<C-U>Rake<CR>
-autocmd User Rails nnoremap <buffer> <D-R> :<C-U>.Rake<CR>
 
 " FuzzyFinder
 nmap <C-f> :FufCoverageFile<cr>
@@ -61,9 +52,3 @@ nnoremap <leader>5  :FufChangeList<CR>
 nnoremap <leader>6  :FufMruFile<CR>
 nnoremap <leader>7  :FufLine<CR>
 nnoremap <leader>9  :FufTaggedFile<CR>
-
-nnoremap <leader>baf  :FufBookmarkFileAdd<CR>
-nnoremap <leader>bf  :FufBookmarkFile<CR>
-
-nnoremap <leader>bad  :FufBookmarkDirAdd<CR>
-nnoremap <leader>bd  :FufBookmarkDir<CR>
