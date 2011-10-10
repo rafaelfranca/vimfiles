@@ -29,8 +29,10 @@ set visualbell t_vb=
 set statusline=%f\  " Filename
 set statusline+=%c, " Cursor Column
 set statusline+=%l/%L " Cursor Line/Total Lines
+set statusline+=%#error#
 set statusline+=%{StatuslineTrailingSpaceWarning()}
 set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
 
 set laststatus=2
 
@@ -127,3 +129,7 @@ function! RemoveTraillingSpaces()
 endfunction
 
 nnoremap <silent> <F5> :call RemoveTraillingSpaces()<CR>
+
+" Syntastic configuration
+let g:syntastic_enable_signs=1
+let g:syntastic_auto_loc_list=1
