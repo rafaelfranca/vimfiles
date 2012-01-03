@@ -1,9 +1,6 @@
 " Make Y yank the rest of the line (like with C and D)
 nnoremap Y y$
 
-" Remove all trailing whitespace
-nnoremap <silent> <F5> :let _s=@/<Bar>:%s/\s\+$//e<Bar>:let @/=_s<Bar>:nohl<CR>:retab<CR>
-
 " Moving Emacs-likey!
 imap <C-f> <C-o>l
 imap <C-b> <C-o>h
