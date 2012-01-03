@@ -40,12 +40,12 @@ nmap <C-f> :FufCoverageFile<cr>
 nmap <C-f> <C-o>:FufCoverageFile<cr>
 let g:fuf_modesDisable = []
 nnoremap <leader>h :FufHelp<CR>
-nnoremap <leader>2  :FufFileWithCurrentBufferDir<CR>
-nnoremap <leader>@  :FufFile<CR>
-nnoremap <leader>3  :FufBuffer<cr>
-nnoremap <leader>4  :FufDirWithCurrentBufferDir<CR>
-nnoremap <leader>$  :FufDir<CR>
-nnoremap <leader>5  :FufChangeList<CR>
-nnoremap <leader>6  :FufMruFile<CR>
-nnoremap <leader>7  :FufLine<CR>
-nnoremap <leader>9  :FufTaggedFile<CR>
+nnoremap <leader>2 :FufFileWithCurrentBufferDir<CR>
+nnoremap <leader>@ :FufFile<CR>
+nnoremap <leader>3 :FufBuffer<cr>
+nnoremap <leader>4 :FufDirWithCurrentBufferDir<CR>
+nnoremap <leader>$ :FufDir<CR>
+nnoremap <leader>5 :FufChangeList<CR>
+nnoremap <leader>6 :FufMruFile<CR>
+nnoremap <leader>7 :FufLine<CR>
+nnoremap <leader>9 :FufTaggedFile<CR>
