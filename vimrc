@@ -89,12 +89,6 @@ if has("gui_mac") || has("gui_macvim")
   source ~/.vim/macvim.vim
 endif
 
-" Snipmate setup
-source ~/.vim/snippets/support_functions.vim
-
-" Ragtag setup
-let g:ragtag_global_maps = 1
-
 "recalculate the trailing whitespace warning when idle, and after saving
 autocmd cursorhold,bufwritepost * unlet! b:statusline_trailing_space_warning
 
@@ -126,11 +120,4 @@ endfunction
 
 nnoremap <silent> <F5> :call RemoveTraillingSpaces()<CR>
 
-" Syntastic configuration
-let g:syntastic_enable_signs=1
-" CtrlP configuration
-set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*.so,*/vendor/ruby/*
-let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files']
-
-" Delete fugitive buffers when it is hidded
-autocmd BufReadPost fugitive://* set bufhidden=delete
+source ~/.vim/plugins.vim
