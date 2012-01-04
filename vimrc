@@ -26,13 +26,15 @@ set nowrap
 set visualbell t_vb=
 
 " Statusline setup
-set statusline=%f\  " Filename
-set statusline+=%c, " Cursor Column
-set statusline+=%l/%L " Cursor Line/Total Lines
+set statusline=%f " Filename
+set statusline+=%m " Modified status
 set statusline+=%#error#
 set statusline+=%{StatuslineTrailingSpaceWarning()}
 set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
+set statusline+=%y\  " Filetype
+set statusline+=%c, " Cursor Column
+set statusline+=%l/%L " Cursor Line/Total Lines
 
 set laststatus=2
 
