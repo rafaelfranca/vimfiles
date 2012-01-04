@@ -81,10 +81,6 @@ cab WQ wq
 cab qw wq
 cab X x
 
-" FuzzyFinder configuration
-let g:fuf_coveragefile_globPatterns=['**/*.h', '**/*.c', '**/*.rb', '**/*.js', '**/*.erb', '**/*.css']
-let g:fuf_coveragefile_exclude= 'vendor\/'
-
 " Loading the other files from the repository
 source ~/.vim/keymaps.vim
 
@@ -132,6 +128,9 @@ nnoremap <silent> <F5> :call RemoveTraillingSpaces()<CR>
 
 " Syntastic configuration
 let g:syntastic_enable_signs=1
+" CtrlP configuration
+set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*.so,*/vendor/ruby/*
+let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files']
 
 " Delete fugitive buffers when it is hidded
 autocmd BufReadPost fugitive://* set bufhidden=delete
