@@ -49,3 +49,6 @@ nnoremap <leader>5 :FufChangeList<CR>
 nnoremap <leader>6 :FufMruFile<CR>
 nnoremap <leader>7 :FufLine<CR>
 nnoremap <leader>9 :FufTaggedFile<CR>
+
+" Fugitive
+nmap <silent> <F6> :Gstatus<CR>
