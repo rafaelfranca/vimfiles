@@ -31,6 +31,7 @@ set statusline+=%m " Modified status
 set statusline+=%#error#
 set statusline+=%{StatuslineTrailingSpaceWarning()}
 set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%{GitEmailAlert()}
 set statusline+=%*
 set statusline+=%y\  " Filetype
 set statusline+=%c, " Cursor Column
@@ -118,6 +119,20 @@ function! RemoveTraillingSpaces()
         let cursor_pos = getpos(".")
         %s/[ \t]*$//g
         call setpos(".", cursor_pos)
+endfunction
+
+" Alert if the local git email is not set
+function! GitEmailAlert()
+  if !exists("g:gitemail_alert")
+    let s:email = system("git config --local --get user.email")
+
+    if s:email == ''
+      let g:gitemail_alert = '[Configure git local email]'
+    else
+      let g:gitemail_alert = ''
+    endif
+  endif
+  return g:gitemail_alert
 endfunction
 
 nnoremap <silent> <F5> :call RemoveTraillingSpaces()<CR>
