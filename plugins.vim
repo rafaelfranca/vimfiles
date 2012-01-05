@@ -11,8 +11,8 @@ let g:syntastic_enable_signs=1
 autocmd BufReadPost fugitive://* set bufhidden=delete
 
 " CtrlP configuration
-set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*.so,*/vendor/ruby/*
-let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files']
+set wildignore+=*/.hg/*,*/.svn/*,*.so,*/b/*
+let g:ctrlp_custom_ignore = '\.git/*\|vendor/ruby/*'
 
 " gist
 let g:gist_detect_filetype = 1
