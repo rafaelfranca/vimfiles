@@ -135,6 +135,4 @@ function! GitEmailAlert()
   return g:gitemail_alert
 endfunction
 
-nnoremap <silent> <F5> :call RemoveTraillingSpaces()<CR>
-
 source ~/.vim/plugins.vim

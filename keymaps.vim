@@ -37,3 +37,8 @@ vmap <Leader>t, :Tabularize /,\zs<CR>
 
 " Fugitive
 nmap <silent> <F6> :Gstatus<CR>
+
+" Whitespaces
+nnoremap <silent> <F5> :call RemoveTraillingSpaces()<CR>
+map <silent> <F4> mmgg=G'm
+imap <silent> <F4> <Esc> mmgg=G'm
