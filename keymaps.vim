@@ -1,14 +1,6 @@
 " Make Y yank the rest of the line (like with C and D)
 nnoremap Y y$
 
-" Moving Emacs-likey!
-imap <C-f> <C-o>l
-imap <C-b> <C-o>h
-imap <C-n> <C-o>j
-imap <C-p> <C-o>k
-imap <C-a> <C-o>0
-imap <C-e> <C-o>$
-
 " Word substitution on insert mode
 imap <C-w> <C-o>dw
 
