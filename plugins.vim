@@ -4,9 +4,6 @@ source ~/.vim/snippets/support_functions.vim
 " Ragtag setup
 let g:ragtag_global_maps = 1
 
-" Syntastic configuration
-let g:syntastic_enable_signs=1
-
 " Delete fugitive buffers when it is hidded
 autocmd BufReadPost fugitive://* set bufhidden=delete
 
