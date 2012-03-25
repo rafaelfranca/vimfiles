@@ -21,7 +21,7 @@
 	url = git://github.com/tpope/vim-ragtag.git
 [submodule "bundle/html5"]
 	path = bundle/html5
-	url = git://github.com/sryche/html5-vim-minimal.git
+	url = git://github.com/cfcosta/html5-vim-minimal.git
 [submodule "bundle/zencoding"]
 	path = bundle/zencoding
 	url = git://github.com/mattn/zencoding-vim.git
