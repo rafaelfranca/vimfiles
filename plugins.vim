@@ -13,6 +13,7 @@ autocmd BufReadPost fugitive://* set bufhidden=delete
 " CtrlP configuration
 set wildignore+=*/.hg/*,*/.svn/*,*.so,*/b/*
 let g:ctrlp_custom_ignore = '\.git/*\|vendor/ruby/*'
+let g:ctrlp_dotfiles = 0
 
 " gist
 let g:gist_detect_filetype = 1
