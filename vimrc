@@ -30,7 +30,6 @@ set statusline=%f " Filename
 set statusline+=%m " Modified status
 set statusline+=%#error#
 set statusline+=%{StatuslineTrailingSpaceWarning()}
-set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%{GitEmailAlert()}
 set statusline+=%*
 set statusline+=%y\  " Filetype
