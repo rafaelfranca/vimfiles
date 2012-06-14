@@ -88,3 +88,6 @@
 [submodule "bundle/elixir-snippets"]
 	path = bundle/elixir-snippets
 	url = git://github.com/carlosgaldino/elixir-snippets.git
+[submodule "bundle/webapi"]
+	path = bundle/webapi
+	url = git://github.com/mattn/webapi-vim.git
