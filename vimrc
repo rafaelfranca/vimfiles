@@ -134,4 +134,10 @@ function! GitEmailAlert()
   return g:gitemail_alert
 endfunction
 
+function! CustomFoldText()
+  let foldsize = (v:foldend-v:foldstart)
+  return getline(v:foldstart).' ('.foldsize.' lines)'
+endfunction
+setlocal foldtext=CustomFoldText()
+
 source ~/.vim/plugins.vim
