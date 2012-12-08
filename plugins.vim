@@ -15,3 +15,8 @@ let g:ctrlp_dotfiles = 0
 " gist
 let g:gist_detect_filetype = 1
 let g:gist_open_browser_after_post = 1
+
+" vim-ruby
+let ruby_operators = 1
+let ruby_space_errors = 1
+let ruby_fold = 1
