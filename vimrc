@@ -2,7 +2,7 @@
 filetype off
 
 " Load all Pathogen Bundles
-call pathogen#runtime_append_all_bundles()
+call pathogen#infect()
 
 " Set vim-specific functions available, breaking compatibility with vi
 set nocompatible
