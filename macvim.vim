@@ -6,7 +6,7 @@ set guioptions-=L
 set guioptions-=r
 
 " GUI Font config
-set guifont=Monaco:h13
+set guifont=Monaco:h16
 
 " Transparency on MacVim window
 set transparency=5
