@@ -38,3 +38,5 @@ imap <silent> <F4> <Esc> mmgg=G'm
 " Spell
 map <silent> <F7> :set spell!<CR>
 imap <silent> <F7> <Esc> :set spell!<CR>
+
+nnoremap <leader>. :CtrlPTag<cr>
