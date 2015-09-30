@@ -67,21 +67,12 @@
 [submodule "bundle/rtf_pygmentize"]
 	path = bundle/rtf_pygmentize
 	url = git://github.com/rafaelfranca/rtf_pygmentize.git
-[submodule "bundle/abolish"]
-	path = bundle/abolish
-	url = git://github.com/tpope/vim-abolish.git
 [submodule "bundle/solarized"]
 	path = bundle/solarized
 	url = git://github.com/altercation/vim-colors-solarized.git
 [submodule "bundle/unimpaired"]
 	path = bundle/unimpaired
 	url = git://github.com/tpope/vim-unimpaired.git
-[submodule "bundle/elixir"]
-	path = bundle/elixir
-	url = git://github.com/elixir-lang/vim-elixir.git
-[submodule "bundle/elixir-snippets"]
-	path = bundle/elixir-snippets
-	url = git://github.com/carlosgaldino/elixir-snippets.git
 [submodule "bundle/webapi"]
 	path = bundle/webapi
 	url = git://github.com/mattn/webapi-vim.git
