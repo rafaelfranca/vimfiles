@@ -85,3 +85,12 @@
 [submodule "bundle/ctrlp"]
 	path = bundle/ctrlp
 	url = https://github.com/ctrlpvim/ctrlp.vim
+[submodule "bundle/tags"]
+	path = bundle/tags
+	url = https://github.com/szw/vim-tags.git
+[submodule "bundle/bundler"]
+	path = bundle/bundler
+	url = git://github.com/tpope/vim-bundler.git
+[submodule "bundle/dispatch"]
+	path = bundle/dispatch
+	url = git://github.com/tpope/vim-dispatch.git
