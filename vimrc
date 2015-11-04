@@ -9,7 +9,7 @@ set nocompatible
 
 " Line Number
 set number
-set colorcolumn=100
+set colorcolumn=120
 
 " Syntax highlighting options
 syntax on
