@@ -10,6 +10,7 @@ set nocompatible
 " Line Number
 set number
 set colorcolumn=120
+set synmaxcol=200
 
 " Syntax highlighting options
 syntax on
