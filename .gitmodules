@@ -91,9 +91,9 @@
 [submodule "bundle/dispatch"]
 	path = bundle/dispatch
 	url = git://github.com/tpope/vim-dispatch.git
-[submodule "bundle/syntastic"]
-	path = bundle/syntastic
-	url = https://github.com/scrooloose/syntastic.git
 [submodule "bundle/vim-airline-themes"]
 	path = bundle/vim-airline-themes
 	url = https://github.com/vim-airline/vim-airline-themes
+[submodule "bundle/neomake"]
+	path = bundle/neomake
+	url = git@github.com:neomake/neomake.git

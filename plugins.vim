@@ -21,11 +21,10 @@ let ruby_operators = 1
 let ruby_space_errors = 1
 let ruby_fold = 1
 
-" syntastic
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
+" Neomake
+autocmd! BufWritePost,BufEnter * Neomake
+let g:neomake_open_list = 2
+
 
 " ack
 let g:ackprg = "ag --vimgrep"
