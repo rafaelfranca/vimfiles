@@ -25,6 +25,5 @@ let ruby_fold = 1
 autocmd! BufWritePost,BufEnter * Neomake
 let g:neomake_open_list = 2
 
-
 " ack
 let g:ackprg = "ag --vimgrep"
