@@ -27,3 +27,6 @@ let g:neomake_open_list = 2
 
 " ack
 let g:ackprg = "ag --vimgrep"
+
+" tags
+let g:vim_tags_use_vim_dispatch = 0
