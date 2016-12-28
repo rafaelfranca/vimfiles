@@ -105,6 +105,10 @@ function! neomake#utils#DebugObject(msg, obj) abort
     call neomake#utils#DebugMessage(a:msg.' '.neomake#utils#Stringify(a:obj))
 endfunction
 
+function! neomake#utils#wstrpart(mb_string, start, len) abort
+  return matchstr(a:mb_string, '.\{,'.a:len.'}', 0, a:start+1)
+endfunction
+
 " This comes straight out of syntastic.
 "print as much of a:msg as possible without "Press Enter" prompt appearing
 function! neomake#utils#WideMessage(msg) abort " {{{2
@@ -119,7 +123,7 @@ function! neomake#utils#WideMessage(msg) abort " {{{2
     "width as the proper amount of characters
     let chunks = split(msg, "\t", 1)
     let msg = join(map(chunks[:-2], "v:val . repeat(' ', &tabstop - strwidth(v:val) % &tabstop)"), '') . chunks[-1]
-    let msg = strpart(msg, 0, &columns - 1)
+    let msg = neomake#utils#wstrpart(msg, 0, &columns - 1)
 
     set noruler noshowcmd
     redraw
@@ -172,7 +176,6 @@ function! neomake#utils#MakerFromCommand(command) abort
     return {
         \ 'exe': &shell,
         \ 'args': [&shellcmdflag, command],
-        \ 'remove_invalid_entries': 0,
         \ }
 endfunction
 
@@ -345,4 +348,19 @@ function! neomake#utils#hook(event, context) abort
         call neomake#utils#DebugMessage(printf(
                     \ 'Skipping User autocmd %s: no hooks.', a:event))
     endif
+endfunction
+
+function! neomake#utils#diff_dict(d1, d2) abort
+    let diff = [{}, {}, {}]
+    let keys = keys(a:d1) + keys(a:d2)
+    for k in keys
+        if !has_key(a:d2, k)
+            let diff[1][k] = a:d1[k]
+        elseif !has_key(a:d1, k)
+            let diff[2][k] = a:d2[k]
+        elseif type(a:d1[k]) !=# type(a:d2[k]) || a:d1[k] !=# a:d2[k]
+            let diff[0][k] = [a:d1[k], a:d2[k]]
+        endif
+    endfor
+    return diff
 endfunction

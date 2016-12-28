@@ -168,3 +168,29 @@ Execute (TODO: neomake#utils#MakerIsAvailable picks up changes):
   AssertEqual neomake#utils#MakerIsAvailable('myft', 'sh'), 0
   let g:neomake_myft_sh_maker.exe = 'sh'
   AssertEqual neomake#utils#MakerIsAvailable('myft', 'sh'), 1
+
+Execute (neomake#utils#diff_dict):
+  AssertEqual neomake#utils#diff_dict({}, {}), [{}, {}, {}]
+  AssertEqual neomake#utils#diff_dict({'a': 1}, {'a': 2}),
+    \ [{'a': [1, 2]}, {}, {}]
+  AssertEqual neomake#utils#diff_dict({'a': 1}, {'b': 2}),
+    \ [{}, {'a': 1}, {'b': 2}]
+  AssertEqual neomake#utils#diff_dict({'a': 1}, {'a': 1, 'b': 2}),
+    \ [{}, {}, {'b': 2}]
+
+  AssertEqual neomake#utils#diff_dict({'a': '1'}, {'a': 1}),
+    \ [{'a': ['1', 1]}, {}, {}]
+  AssertEqual neomake#utils#diff_dict({'a': []}, {'a': {}}),
+    \ [{'a': [[], {}]}, {}, {}]
+
+Execute (neomake#utils#wstrpart):
+  AssertEqual neomake#utils#wstrpart('123', 0, 0), ''
+  AssertEqual neomake#utils#wstrpart('123', 0, 1), '1'
+  AssertEqual neomake#utils#wstrpart('123', 0, 2), '12'
+  AssertEqual neomake#utils#wstrpart('123', 1, 2), '23'
+  AssertEqual neomake#utils#wstrpart('123', 1, 1), '2'
+  AssertEqual neomake#utils#wstrpart('123', 1, 0), ''
+
+  AssertEqual neomake#utils#wstrpart('…', 0, 1), '…'
+  AssertEqual neomake#utils#wstrpart('12…45', 1, 3), '2…4'
+  AssertEqual neomake#utils#wstrpart('…after', 1, 10), 'after'
