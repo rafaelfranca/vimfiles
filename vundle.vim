@@ -34,7 +34,7 @@ Plugin 'tpope/vim-dispatch'
 Plugin 'vim-airline/vim-airline-themes'
 Plugin 'neomake/neomake'
 Plugin 'SirVer/ultisnips'
-Plugin 'honza/vim-snippets'
+Plugin 'rafaelfranca/vim-snippets'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
