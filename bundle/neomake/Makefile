@@ -6,7 +6,8 @@ test: testnvim testvim
 SHELL:=/bin/bash -o pipefail
 
 VADER:=Vader!
-VADER_ARGS:=tests/neomake.vader
+VADER_OPTIONS?=
+VADER_ARGS=tests/neomake.vader $(VADER_OPTIONS)
 VIM_ARGS='+$(VADER) $(VADER_ARGS)'
 
 DEFAULT_VADER_DIR:=tests/vim/plugins/vader
@@ -19,6 +20,9 @@ TEST_VIMRC:=tests/vim/vimrc
 
 # This is expected in tests.
 TEST_VIM_PREFIX:=SHELL=/bin/bash
+
+testx: export VADER_OPTIONS=-x
+testx: test
 
 # Neovim might quit after ~5s with stdin being closed.  Use --headless mode to
 # work around this, which then also requires :Vader to be silent.
@@ -36,7 +40,7 @@ testvim: TEST_VIM:=vim -X
 testvim: TEST_VIM_PREFIX+=HOME=/dev/null
 testvim: _run_vim
 
-_SED_HIGHLIGHT_ERRORS:=| sed 's/([[:digit:]]\+\/[[:digit:]]\+) \[[ [:alpha:]]\+\] (X).*/[31m[1m\0[0m/'
+_SED_HIGHLIGHT_ERRORS:=| sed 's/([ [:digit:]]\+\/[[:digit:]]\+) \[[ [:alpha:]]\+\] (X).*/[31m[1m\0[0m/'
 # Need to close stdin to fix spurious 'sed: couldn't write X items to stdout: Resource temporarily unavailable'.
 # Redirect to stderr again for Docker (where only stderr is used from).
 _REDIR_STDOUT:=2>&1 </dev/null >/dev/null $(_SED_HIGHLIGHT_ERRORS) >&2

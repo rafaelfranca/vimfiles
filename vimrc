@@ -1,11 +1,10 @@
 " Necessary on some Linux distros for pathogen to properly load bundles
 filetype off
 
-" Load all Pathogen Bundles
-call pathogen#infect()
-
 " Set vim-specific functions available, breaking compatibility with vi
 set nocompatible
+
+source ~/.vim/vundle.vim
 
 " Line Number
 set number
