@@ -20,7 +20,21 @@ let ruby_fold = 1
 
 " Neomake
 autocmd! BufWritePost,BufEnter * Neomake
-let g:neomake_open_list = 2
+function! neomake#makers#ft#ruby#rubocop()
+    let path = getcwd() . '.rubocop.yml'
+
+    if filereadable(path)
+      let args = ['--format', 'emacs', '--config', path]
+    else
+      let args = ['--format', 'emacs']
+    endif
+
+    return {
+        \ 'args': args,
+        \ 'errorformat': '%f:%l:%c: %t: %m',
+        \ 'postprocess': function('neomake#makers#ft#ruby#RubocopEntryProcess')
+        \ }
+endfunction
 
 " ack
 let g:ackprg = "ag --vimgrep"
