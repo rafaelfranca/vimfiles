@@ -39,4 +39,6 @@ imap <silent> <F4> <Esc> mmgg=G'm
 map <silent> <F7> :set spell!<CR>
 imap <silent> <F7> <Esc> :set spell!<CR>
 
-nnoremap <leader>. :CtrlPTag<cr>
+nnoremap <leader>. :CtrlPTag<CR>
+nnoremap <leader>q :copen<CR>
+nnoremap <leader>l :lopen<CR>
