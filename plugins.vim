@@ -22,6 +22,7 @@ let ruby_fold = 1
 autocmd! BufWritePost,BufEnter * Neomake
 function! neomake#makers#ft#ruby#rubocop()
     let path = getcwd() . '.rubocop.yml'
+    let exepath = getcwd() . '/bin/rubocop'
 
     if filereadable(path)
       let args = ['--format', 'emacs', '--config', path]
@@ -29,7 +30,14 @@ function! neomake#makers#ft#ruby#rubocop()
       let args = ['--format', 'emacs']
     endif
 
+    if filereadable(exepath)
+      let exe = exepath
+    else
+      let exe = 'rubocop'
+    endif
+
     return {
+        \ 'exe': exe,
         \ 'args': args,
         \ 'errorformat': '%f:%l:%c: %t: %m',
         \ 'postprocess': function('neomake#makers#ft#ruby#RubocopEntryProcess')
