@@ -73,9 +73,12 @@ function! neomake#makers#ft#haskell#hdevtools() abort
     if !exists('s:uses_cabal')
         let s:uses_cabal = 0
         if executable('stack')
-            let rootdir = systemlist('stack --verbosity silent path --project-root')[0]
-            if glob(rootdir . '/*.cabal') != ''
-                let s:uses_cabal = 1
+            let output = neomake#compat#systemlist(['stack', '--verbosity', 'silent', 'path', '--project-root'])
+            if !empty(output)
+                let rootdir = output[0]
+                if !empty(glob(rootdir . '/*.cabal'))
+                    let s:uses_cabal = 1
+                endif
             endif
         endif
     endif
@@ -109,6 +112,7 @@ function! neomake#makers#ft#haskell#HlintEntryProcess(entry) abort
     " Postprocess hlint output to make it more readable as a single line
     let a:entry.text = substitute(a:entry.text, '\v(Found:)\s*\n', ' | \1', 'g')
     let a:entry.text = substitute(a:entry.text, '\v(Why not:)\s*\n', ' | \1', 'g')
+    let a:entry.text = substitute(a:entry.text, '^No hints$', '', 'g')
     call neomake#utils#CompressWhitespace(a:entry)
 endfunction
 

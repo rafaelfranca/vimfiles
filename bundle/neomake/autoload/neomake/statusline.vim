@@ -1,9 +1,9 @@
 let s:qflist_counts = {}
 let s:loclist_counts = {}
 
-function! s:setCount(counts, item, buf) abort
+function! s:incCount(counts, item, buf) abort
     let type = toupper(a:item.type)
-    if len(type) && (!a:buf || a:item.bufnr ==# a:buf)
+    if !empty(type) && (!a:buf || a:item.bufnr ==# a:buf)
         let a:counts[type] = get(a:counts, type, 0) + 1
         return 1
     endif
@@ -11,13 +11,12 @@ function! s:setCount(counts, item, buf) abort
 endfunction
 
 function! neomake#statusline#ResetCountsForBuf(...) abort
-    let bufnr = a:0 ? a:1 : bufnr('%')
+    let bufnr = a:0 ? +a:1 : bufnr('%')
     let r = (get(s:loclist_counts, bufnr, {}) != {})
     let s:loclist_counts[bufnr] = {}
     if r
         call neomake#utils#hook('NeomakeCountsChanged', {
-                    \ 'file_mode': 1,
-                    \ 'bufnr': bufnr})
+              \ 'reset': 1, 'file_mode': 1, 'bufnr': bufnr})
     endif
     return r
 endfunction
@@ -27,12 +26,12 @@ function! neomake#statusline#ResetCountsForProject(...) abort
     let s:qflist_counts = {}
     if r
         call neomake#utils#hook('NeomakeCountsChanged', {
-                    \ 'file_mode': 0,
-                    \ 'bufnr': bufnr('%')})
+              \ 'reset': 1, 'file_mode': 0, 'bufnr': bufnr('%')})
     endif
     return r
 endfunction
 
+" TODO: deprecate/remove.
 function! neomake#statusline#ResetCounts() abort
     let r = neomake#statusline#ResetCountsForProject()
     for bufnr in keys(s:loclist_counts)
@@ -44,11 +43,11 @@ endfunction
 
 function! neomake#statusline#AddLoclistCount(buf, item) abort
     let s:loclist_counts[a:buf] = get(s:loclist_counts, a:buf, {})
-    return s:setCount(s:loclist_counts[a:buf], a:item, a:buf)
+    return s:incCount(s:loclist_counts[a:buf], a:item, a:buf)
 endfunction
 
 function! neomake#statusline#AddQflistCount(item) abort
-    return s:setCount(s:qflist_counts, a:item, 0)
+    return s:incCount(s:qflist_counts, a:item, 0)
 endfunction
 
 function! neomake#statusline#LoclistCounts(...) abort

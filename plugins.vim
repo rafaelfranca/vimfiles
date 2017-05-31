@@ -4,10 +4,8 @@ let g:ragtag_global_maps = 1
 " Delete fugitive buffers when it is hidded
 autocmd BufReadPost fugitive://* set bufhidden=delete
 
-" CtrlP configuration
+" Fzf configuration
 set wildignore+=*/.hg/*,*/.svn/*,*.so,*/b/*
-let g:ctrlp_custom_ignore = '\.git/*\|vendor/ruby/*'
-let g:ctrlp_dotfiles = 0
 
 " gist
 let g:gist_detect_filetype = 1
@@ -52,3 +50,4 @@ let g:vim_tags_use_vim_dispatch = 0
 
 " Snippets
 let g:tm_rails_template_end_ruby_inline = ' -%>'
+

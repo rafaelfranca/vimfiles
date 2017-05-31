@@ -39,6 +39,24 @@ imap <silent> <F4> <Esc> mmgg=G'm
 map <silent> <F7> :set spell!<CR>
 imap <silent> <F7> <Esc> :set spell!<CR>
 
-nnoremap <leader>. :CtrlPTag<CR>
 nnoremap <leader>q :copen<CR>
 nnoremap <leader>l :lopen<CR>
+
+" Mapping selecting mappings
+nmap <leader><tab> <plug>(fzf-maps-n)
+xmap <leader><tab> <plug>(fzf-maps-x)
+omap <leader><tab> <plug>(fzf-maps-o)
+
+" Insert mode completion
+imap <c-x><c-k> <plug>(fzf-complete-word)
+imap <c-x><c-f> <plug>(fzf-complete-path)
+imap <c-x><c-j> <plug>(fzf-complete-file-ag)
+imap <c-x><c-l> <plug>(fzf-complete-line)
+
+
+nnoremap <leader>j :Buffers<cr>
+nnoremap <leader><C-p> :Files<cr>
+nnoremap <leader><C-a> :GFiles?<cr>
+nnoremap <C-p> :GFiles<cr>
+nnoremap <leader>t :Tags<cr>
+nnoremap <leader>T :BTags<cr>
