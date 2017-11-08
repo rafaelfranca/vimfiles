@@ -6,12 +6,7 @@ if !exists('s:compile_script')
 endif
 
 function! neomake#makers#ft#python#EnabledMakers() abort
-    if exists('s:python_makers')
-        return s:python_makers
-    endif
-
     let makers = ['python', 'frosted']
-
     if executable('pylama')
         call add(makers, 'pylama')
     else
@@ -20,11 +15,8 @@ function! neomake#makers#ft#python#EnabledMakers() abort
         else
             call extend(makers, ['pyflakes', 'pycodestyle', 'pydocstyle'])
         endif
-
         call add(makers, 'pylint')  " Last because it is the slowest
     endif
-
-    let s:python_makers = makers
     return makers
 endfunction
 
@@ -41,6 +33,7 @@ function! neomake#makers#ft#python#pylint() abort
             \ '%A%f:(%l): %m,' .
             \ '%-Z%p^%.%#,' .
             \ '%-G%.%#',
+        \ 'output_stream': 'stdout',
         \ 'postprocess': [
         \   function('neomake#postprocess#GenericLengthPostprocess'),
         \   function('neomake#makers#ft#python#PylintEntryProcess'),
@@ -69,15 +62,22 @@ function! neomake#makers#ft#python#PylintEntryProcess(entry) abort
 endfunction
 
 function! neomake#makers#ft#python#flake8() abort
-    return {
+    let maker = {
         \ 'args': ['--format=default'],
         \ 'errorformat':
             \ '%E%f:%l: could not compile,%-Z%p^,' .
             \ '%A%f:%l:%c: %t%n %m,' .
             \ '%A%f:%l: %t%n %m,' .
             \ '%-G%.%#',
-        \ 'postprocess': function('neomake#makers#ft#python#Flake8EntryProcess')
+        \ 'postprocess': function('neomake#makers#ft#python#Flake8EntryProcess'),
+        \ 'short_name': 'fl8',
         \ }
+
+    function! maker.supports_stdin(jobinfo) abort
+        let self.args += ['--stdin-display-name', bufname('%')]
+        return 1
+    endfunction
+    return maker
 endfunction
 
 function! neomake#makers#ft#python#Flake8EntryProcess(entry) abort
@@ -89,6 +89,8 @@ function! neomake#makers#ft#python#Flake8EntryProcess(entry) abort
             else
                 let type = 'W'
             endif
+        elseif a:entry.nr == 841
+            let type = 'W'
         else
             let type = 'E'
         endif
@@ -100,6 +102,8 @@ function! neomake#makers#ft#python#Flake8EntryProcess(entry) abort
         let type = 'W'
     elseif a:entry.type ==# 'C' || a:entry.type ==# 'T'  " McCabe complexity & todo notes
         let type = 'I'
+    elseif a:entry.type ==# 'I' " keep at least 'I' from isort (I1), could get style subtype?!
+        let type = a:entry.type
     else
         let type = ''
     endif
@@ -233,11 +237,20 @@ function! neomake#makers#ft#python#PylamaEntryProcess(entry) abort
 endfunction
 
 function! neomake#makers#ft#python#pylama() abort
-    return {
+    let maker = {
         \ 'args': ['--format', 'parsable'],
         \ 'errorformat': '%f:%l:%c: [%t] %m',
         \ 'postprocess': function('neomake#makers#ft#python#PylamaEntryProcess'),
         \ }
+    " Pylama looks for the config only in the current directory.
+    " Therefore we change to where the config likely is.
+    " --options could be used to pass a config file, but we cannot be sure
+    " which one really gets used.
+    let ini_file = neomake#utils#FindGlobFile('{pylama.ini,setup.cfg,tox.ini,pytest.ini}')
+    if !empty(ini_file)
+        let maker.cwd = fnamemodify(ini_file, ':h')
+    endif
+    return maker
 endfunction
 
 function! neomake#makers#ft#python#python() abort
@@ -247,6 +260,7 @@ function! neomake#makers#ft#python#python() abort
         \ 'serialize': 1,
         \ 'serialize_abort_on_error': 1,
         \ 'output_stream': 'stdout',
+        \ 'short_name': 'py',
         \ }
 endfunction
 
@@ -270,10 +284,20 @@ function! neomake#makers#ft#python#vulture() abort
 endfunction
 
 " --fast-parser: adds experimental support for async/await syntax
-" --silent-imports: replaced by --ignore-missing-imports --follow-imports=skip
+" --silent-imports: replaced by --ignore-missing-imports
 function! neomake#makers#ft#python#mypy() abort
+    let l:args = ['--check-untyped-defs', '--ignore-missing-imports']
+
+    " Append '--py2' to args with Python 2 for Python 2 mode.
+    if !exists('s:python_version')
+        let s:python_version = split(split(system('python -V 2>&1'))[1], '\.')
+    endif
+    if !v:shell_error && s:python_version[0] ==# '2'
+        call add(l:args, '--py2')
+    endif
+
     return {
-        \ 'args': ['--ignore-missing-imports', '--follow-imports=skip'],
+        \ 'args': l:args,
         \ 'errorformat':
             \ '%E%f:%l: error: %m,' .
             \ '%W%f:%l: warning: %m,' .

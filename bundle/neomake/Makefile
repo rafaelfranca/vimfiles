@@ -1,9 +1,13 @@
 # Do not let mess "cd" with user-defined paths.
 CDPATH:=
-SHELL:=/bin/bash -o pipefail
+
+bash:=$(shell command -v bash 2>/dev/null)
+# This is expected in tests.
+TEST_VIM_PREFIX:=SHELL=$(bash)
+SHELL:=$(bash) -o pipefail
 
 # Use nvim if it is installed, otherwise vim.
-ifeq ($(shell command -v nvim),)
+ifeq ($(shell command -v nvim 2>/dev/null),)
 	DEFAULT_VIM:=vim
 else
 	DEFAULT_VIM:=nvim
@@ -13,28 +17,26 @@ TEST_VIM:=nvim
 IS_NEOVIM=$(findstring nvim,$(TEST_VIM))$(findstring neovim,$(TEST_VIM))
 # Run testnvim and testvim by default, and only one if TEST_VIM is given.
 test: $(if $(TEST_VIM),$(if $(IS_NEOVIM),testnvim,testvim),testnvim testvim)
+test_interactive: $(if $(TEST_VIM),$(if $(IS_NEOVIM),testnvim_interactive,testvim_interactive),testnvim_interactive testvim_interactive)
 
 VADER:=Vader!
 VADER_OPTIONS:=-q
-VADER_ARGS=tests/neomake.vader
-VIM_ARGS='+$(VADER) $(VADER_ARGS) $(VADER_OPTIONS)'
+VADER_ARGS=tests/main.vader tests/isolated.vader
+VIM_ARGS='+$(VADER) $(VADER_OPTIONS) $(VADER_ARGS)'
 
-DEFAULT_VADER_DIR:=tests/vim/plugins/vader
-export TESTS_VADER_DIR:=$(firstword $(realpath $(wildcard tests/vim/plugins/vader.override)) $(DEFAULT_VADER_DIR))
-$(DEFAULT_VADER_DIR):
+NEOMAKE_TESTS_DEP_PLUGINS_DIR?=build/vim/plugins
+TESTS_VADER_DIR:=$(NEOMAKE_TESTS_DEP_PLUGINS_DIR)/vader
+$(TESTS_VADER_DIR):
 	mkdir -p $(dir $@)
-	git clone --depth=1 -b display-source-with-exceptions https://github.com/blueyed/vader.vim $@
-TESTS_FUGITIVE_DIR:=tests/vim/plugins/fugitive
+	git clone -q --depth=1 -b display-source-with-exceptions https://github.com/blueyed/vader.vim $@
+TESTS_FUGITIVE_DIR:=$(NEOMAKE_TESTS_DEP_PLUGINS_DIR)/vim-fugitive
 $(TESTS_FUGITIVE_DIR):
 	mkdir -p $(dir $@)
-	git clone --depth=1 https://github.com/tpope/vim-fugitive $@
+	git clone -q --depth=1 https://github.com/tpope/vim-fugitive $@
 
 DEP_PLUGINS=$(TESTS_VADER_DIR) $(TESTS_FUGITIVE_DIR)
 
 TEST_VIMRC:=tests/vim/vimrc
-
-# This is expected in tests.
-TEST_VIM_PREFIX:=SHELL=/bin/bash
 
 testwatch: override export VADER_OPTIONS+=-q
 testwatch:
@@ -77,9 +79,12 @@ _SED_HIGHLIGHT_ERRORS:=| contrib/highlight-log --compact vader
 # Redirect to stderr again for Docker (where only stderr is used from).
 _REDIR_STDOUT:=2>&1 </dev/null >/dev/null $(_SED_HIGHLIGHT_ERRORS) >&2
 
+_COVIMERAGE=$(if $(filter-out 0,$(NEOMAKE_DO_COVERAGE)),covimerage run --append --no-report ,)
 define func-run-vim
 	$(info Using: $(shell $(TEST_VIM_PREFIX) $(TEST_VIM) --version | head -n2))
-	$(TEST_VIM_PREFIX) $(TEST_VIM) $(if $(IS_NEOVIM),--headless,-X) --noplugin -Nu $(TEST_VIMRC) -i NONE $(VIM_ARGS) $(_REDIR_STDOUT)
+	$(_COVIMERAGE)$(if $(TEST_VIM_PREFIX),env $(TEST_VIM_PREFIX) ,)$(TEST_VIM) \
+	  $(if $(IS_NEOVIM),$(if $(_REDIR_STDOUT),--headless,),-X) \
+	  --noplugin -Nu $(TEST_VIMRC) -i NONE $(VIM_ARGS) $(_REDIR_STDOUT)
 endef
 
 # Interactive tests, keep Vader open.
@@ -114,30 +119,45 @@ $(_TESTS_REL_AND_ABS):
 	make $(FILE_TEST_TARGET) VADER_ARGS='$@'
 .PHONY: $(_TESTS_REL_AND_ABS)
 
+testcoverage: COVERAGE_VADER_ARGS:=tests/main.vader $(wildcard tests/isolated/*.vader)
+testcoverage:
+	$(RM) .coverage.covimerage
+	@ret=0; \
+	for testfile in $(COVERAGE_VADER_ARGS); do \
+	  make test VADER_ARGS=$$testfile NEOMAKE_DO_COVERAGE=1 || (( ++ret )); \
+	done; \
+	exit $$ret
+
 tags:
 	ctags -R --langmap=vim:+.vader
 .PHONY: tags
 
 # Linters, called from .travis.yml.
 LINT_ARGS:=./plugin ./autoload
+
+# Vint.
+VINT_BIN=$(shell command -v vint 2>/dev/null || echo build/vint/bin/vint)
 build/vint: | build
-	virtualenv $@
-	$@/bin/pip install vim-vint
-vint: build/vint
-	build/vint/bin/vint $(LINT_ARGS)
-vint-errors: build/vint
-	build/vint/bin/vint --error $(LINT_ARGS)
+	$(shell command -v virtualenv 2>/dev/null || echo python3 -m venv) $@
+build/vint/bin/vint: | build/vint
+	build/vint/bin/pip install --quiet vim-vint
+vint: | $(VINT_BIN)
+	$(VINT_BIN) --color $(LINT_ARGS)
+vint-errors: | $(VINT_BIN)
+	$(VINT_BIN) --color --error $(LINT_ARGS)
 
 # vimlint
+VIMLINT_BIN=$(shell command -v vimlint 2>/dev/null || echo build/vimlint/bin/vimlint.sh -l build/vimlint -p build/vimlparser)
+build/vimlint/bin/vimlint.sh: build/vimlint build/vimlparser
 build/vimlint: | build
-	git clone --depth=1 https://github.com/syngan/vim-vimlint $@
+	git clone -q --depth=1 https://github.com/syngan/vim-vimlint $@
 build/vimlparser: | build
-	git clone --depth=1 https://github.com/ynkdir/vim-vimlparser $@
+	git clone -q --depth=1 https://github.com/ynkdir/vim-vimlparser $@
 VIMLINT_OPTIONS=-u -e EVL102.l:_=1
-vimlint: build/vimlint build/vimlparser
-	build/vimlint/bin/vimlint.sh $(VIMLINT_OPTIONS) -l build/vimlint -p build/vimlparser $(LINT_ARGS)
-vimlint-errors: build/vimlint build/vimlparser
-	build/vimlint/bin/vimlint.sh $(VIMLINT_OPTIONS) -E -l build/vimlint -p build/vimlparser $(LINT_ARGS)
+vimlint: $(firstword $(VIMLINT_BIN))
+	$(VIMLINT_BIN) $(VIMLINT_OPTIONS) $(LINT_ARGS)
+vimlint-errors: $(firstword VIMLINT_BIN)
+	$(VIMLINT_BIN) $(VIMLINT_OPTIONS) -E $(LINT_ARGS)
 
 build build/neovim-test-home:
 	mkdir $@
@@ -153,12 +173,14 @@ vimhelplint: | build/vimhelplint
 
 # Run tests in dockerized Vims.
 DOCKER_REPO:=neomake/vims-for-tests
-DOCKER_TAG:=5
+DOCKER_TAG:=12
 NEOMAKE_DOCKER_IMAGE?=
 DOCKER_IMAGE:=$(if $(NEOMAKE_DOCKER_IMAGE),$(NEOMAKE_DOCKER_IMAGE),$(DOCKER_REPO):$(DOCKER_TAG))
 DOCKER_STREAMS:=-ti
 DOCKER=docker run $(DOCKER_STREAMS) --rm \
-       -v $(PWD):/testplugin -v $(abspath $(TESTS_VADER_DIR)):/testplugin/tests/vim/plugins/vader $(DOCKER_IMAGE)
+    -v $(PWD):/testplugin \
+    -e NEOMAKE_TEST_NO_COLORSCHEME \
+    $(DOCKER_IMAGE)
 docker_image:
 	docker build -f Dockerfile.tests -t $(DOCKER_REPO):$(DOCKER_TAG) .
 docker_push:
@@ -172,10 +194,18 @@ docker_test_all: $(_DOCKER_VIM_TARGETS)
 $(_DOCKER_VIM_TARGETS):
 	$(MAKE) docker_test DOCKER_VIM=$(patsubst docker_test-%,%,$@)
 
-docker_test: DOCKER_VIM:=vim-master
+_docker_test: DOCKER_VIM:=vim-master
+_docker_test: DOCKER_MAKE_TARGET=$(DOCKER_MAKE_TEST_TARGET) \
+  TEST_VIM='/vim-build/bin/$(DOCKER_VIM)' \
+  VADER_OPTIONS="$(VADER_OPTIONS)" VADER_ARGS="$(VADER_ARGS)"
+_docker_test: docker_make
+docker_test: DOCKER_MAKE_TEST_TARGET:=test
 docker_test: DOCKER_STREAMS:=-t
-docker_test: DOCKER_MAKE_TARGET:=TEST_VIM='/vim-build/bin/$(DOCKER_VIM)' VIM_ARGS="$(VIM_ARGS)"
-docker_test: docker_make
+docker_test: _docker_test
+
+docker_test_interactive: DOCKER_MAKE_TEST_TARGET:=test_interactive
+docker_test_interactive: DOCKER_STREAMS:=-ti
+docker_test_interactive: _docker_test
 
 docker_run: $(DEP_PLUGINS)
 docker_run:
@@ -188,56 +218,53 @@ docker_vimhelplint:
 	$(MAKE) docker_make "DOCKER_MAKE_TARGET=vimhelplint \
 	  VIMHELPLINT_VIM=/vim-build/bin/vim-master"
 
-GET_DOCKER_VIMS=$(shell docker run --rm $(DOCKER_IMAGE) ls /vim-build/bin | grep vim | sort | paste -s -d\ )
+_ECHO_DOCKER_VIMS:=ls /vim-build/bin | grep vim | sort
 docker_list_vims:
-	@echo $(GET_DOCKER_VIMS)
+	docker run --rm $(DOCKER_IMAGE) $(_ECHO_DOCKER_VIMS)
 
-travis_test:
-	@ret=0; \
-	  travis_run_make() { \
-	    echo "travis_fold:start:script.$$1"; \
-	    echo "== Running \"make $$2\" =="; \
-	    make $$2 || return; \
-	    echo "travis_fold:end:script.$$1"; \
-	  }; \
-	  travis_run_make neovim-v0.2.0 "docker_test DOCKER_VIM=neovim-v0.2.0" || (( ret+=1  )); \
-	  travis_run_make neovim-v0.1.7 "docker_test DOCKER_VIM=neovim-v0.1.7" || (( ret+=2  )); \
-	  travis_run_make vim-master    "docker_test DOCKER_VIM=vim-master"    || (( ret+=4  )); \
-	  travis_run_make vim8069       "docker_test DOCKER_VIM=vim8069"       || (( ret+=8  )); \
-	  travis_run_make vim73         "docker_test DOCKER_VIM=vim73"         || (( ret+=16 )); \
-	  travis_run_make check         "check"                                || (( ret+=32 )); \
+check_lint_diff:
+	@set -e; \
+	echo "Looking for changed files (to origin/master)."; \
+	CHANGED_VIM_FILES=($$(git diff-tree --no-commit-id --name-only --diff-filter=AM -r origin/master.. \
+	  | grep '\.vim$$' | grep -v '^tests/fixtures')) || true; \
+	if [ -z "$$CHANGED_VIM_FILES" ]; then \
+	  echo 'No .vim files changed.'; \
+	  exit; \
+	fi; \
+	MAKE_ARGS="LINT_ARGS='$$CHANGED_VIM_FILES'"; \
+	ret=0; \
+	echo "== Running \"make vimlint $$MAKE_ARGS\" =="; \
+	make vimlint $$MAKE_ARGS || (( ret+=1 )); \
+	echo "== Running \"make vint $$MAKE_ARGS\" =="; \
+	make vint $$MAKE_ARGS    || (( ret+=2 )); \
 	exit $$ret
 
-travis_lint:
-	@echo "Looking for changed files in TRAVIS_COMMIT_RANGE=$$TRAVIS_COMMIT_RANGE."; \
-	  if [ -z "$$TRAVIS_COMMIT_RANGE" ]; then \
-	    MAKE_ARGS= ; \
-	  else \
-	    CHANGED_VIM_FILES=($$(git diff --name-only --diff-filter=AM "$$TRAVIS_COMMIT_RANGE" \
-	    | grep '\.vim$$' | grep -v '^tests/fixtures')); \
-	    if [ -z "$$CHANGED_VIM_FILES" ]; then \
-	      echo 'No .vim files changed.'; \
-	      exit; \
-	    fi; \
-	    MAKE_ARGS="LINT_ARGS='$$CHANGED_VIM_FILES'"; \
-	  fi; \
-	  ret=0; \
-	  echo 'travis_fold:start:script.vimlint'; \
-	  echo "== Running \"make vimlint $$MAKE_ARGS\" =="; \
-	  make vimlint $$MAKE_ARGS || (( ret+=1 )); \
-	  echo 'travis_fold:end:script.vimlint'; \
-	  echo 'travis_fold:start:script.vint'; \
-	  echo "== Running \"make vint $$MAKE_ARGS\" =="; \
-	  make vint $$MAKE_ARGS    || (( ret+=2 )); \
-	  echo 'travis_fold:end:script.vint'; \
+# Checks to be run with Docker.
+# This is kept separate from "check" to not require Docker there.
+check_docker:
+	@:; set -e; ret=0; \
+	echo '== Checking for DOCKER_VIMS to be in sync'; \
+	vims=$$($(_ECHO_DOCKER_VIMS)); \
+	docker_vims="$$(printf '%s\n' $(DOCKER_VIMS) | sort)"; \
+	if ! [ "$$vims" = "$$docker_vims" ]; then \
+	  echo "DOCKER_VIMS is out of sync with Vims in image."; \
+	  echo "DOCKER_VIMS: $$docker_vims"; \
+	  echo "in image:    $$vims"; \
+	  (( ret+=8 )); \
+	fi; \
 	exit $$ret
 
 check:
-	@:; ret=0; \
+	@:; set -e; ret=0; \
 	echo '== Checking that all tests are included'; \
-	for f in $(filter-out neomake.vader,$(notdir $(shell git ls-files tests/*.vader))); do \
-	  if ! grep -q "^Include.*: $$f" tests/neomake.vader; then \
-	    echo "Test not included: $$f" >&2; ret=1; \
+	for f in $(filter-out main.vader isolated.vader,$(notdir $(shell git ls-files tests/*.vader))); do \
+	  if ! grep -q "^Include.*: $$f" tests/main.vader; then \
+	    echo "Test not included in main.vader: $$f" >&2; ret=1; \
+	  fi; \
+	done; \
+	for f in $(filter-out main.vader,$(notdir $(shell git ls-files tests/isolated/*.vader))); do \
+	  if ! grep -q "^Include.*: isolated/$$f" tests/isolated.vader; then \
+	    echo "Test not included in isolated.vader: $$f" >&2; ret=1; \
 	  fi; \
 	done; \
 	echo '== Checking for absent Before sections in tests'; \
@@ -250,19 +277,10 @@ check:
 	  echo "Found Log commands."; \
 	  (( ret+=4 )); \
 	fi; \
-	echo '== Checking for DOCKER_VIMS to be in sync'; \
-	vims="$(GET_DOCKER_VIMS)"; \
-	docker_vims=$$(printf '%s\n' $(DOCKER_VIMS) | sort | paste -s -d\ ); \
-	if ! [ "$$vims" = "$$docker_vims" ]; then \
-	  echo "DOCKER_VIMS is out of sync with Vims in image."; \
-	  echo "DOCKER_VIMS: $$docker_vims"; \
-	  echo "in image:    $$vims"; \
-	  (( ret+=8 )); \
-	fi; \
 	echo '== Checking tests'; \
 	output="$$(grep --line-number --color AssertThrows -A1 tests/*.vader \
 		| grep -E '^[^[:space:]]+- ' \
-		| grep -v g:vader_exception | sed -e s/-/:/ -e s/-//)"; \
+		| grep -v g:vader_exception | sed -e s/-/:/ -e s/-// || true)"; \
 	if [[ -n "$$output" ]]; then \
 		echo 'AssertThrows used without checking g:vader_exception:' >&2; \
 		echo "$$output" >&2; \
@@ -271,6 +289,17 @@ check:
 	echo '== Running custom checks'; \
 	contrib/vim-checks $(LINT_ARGS) || (( ret+= 16 )); \
 	exit $$ret
+
+build/coverage: $(shell find . -name '*.vim')
+	$(MAKE) testcoverage
+.coverage: build/coverage
+	covimerage write_coverage $?/*.profile
+coverage: .coverage
+	coverage report -m --skip-covered
+
+clean:
+	$(RM) -r build
+.PHONY: clean
 
 .PHONY: vint vint-errors vimlint vimlint-errors
 .PHONY: test testnvim testvim testnvim_interactive testvim_interactive

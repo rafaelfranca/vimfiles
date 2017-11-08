@@ -25,11 +25,9 @@ function! neomake#makers#ft#rust#cargo() abort
     let maker_command = get(b:, 'neomake_rust_cargo_command',
                 \ get(g:, 'neomake_rust_cargo_command', ['check']))
     return {
+        \ 'cwd': '%:p:h',
         \ 'args': maker_command + ['--message-format=json', '--quiet'],
         \ 'append_file': 0,
-        \ 'errorformat':
-            \ '[%t%n] "%f" %l:%v %m,'.
-            \ '[%t] "%f" %l:%v %m',
         \ 'process_output': function('neomake#makers#ft#rust#CargoProcessOutput'),
         \ }
 endfunction

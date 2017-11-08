@@ -6,17 +6,23 @@ endfunction
 
 function! neomake#makers#ft#ruby#rubocop() abort
     return {
-        \ 'args': ['--format', 'emacs', '--force-exclusion'],
+        \ 'args': ['--format', 'emacs', '--force-exclusion', '--rails', '--display-cop-names'],
         \ 'errorformat': '%f:%l:%c: %t: %m,%E%f:%l: %m',
         \ 'postprocess': function('neomake#makers#ft#ruby#RubocopEntryProcess')
         \ }
 endfunction
 
 function! neomake#makers#ft#ruby#RubocopEntryProcess(entry) abort
-    if a:entry.type ==# 'F'
+    if a:entry.type ==# 'F'  " Fatal error which prevented further processing
         let a:entry.type = 'E'
-    elseif a:entry.type !=# 'W' && a:entry.type !=# 'E'
+    elseif a:entry.type ==# 'E'  " Error for important programming issues
+        let a:entry.type = 'E'
+    elseif a:entry.type ==# 'W'  " Warning for stylistic or minor programming issues
         let a:entry.type = 'W'
+    elseif a:entry.type ==# 'R'  " Refactor suggestion
+        let a:entry.type = 'W'
+    elseif a:entry.type ==# 'C'  " Convention violation
+        let a:entry.type = 'I'
     endif
 endfunction
 

@@ -4,18 +4,24 @@ Execute (neomake#config#get: basic):
   Save g:neomake
   new
 
+  let maker = {'foo': 'maker'}
+  let jobinfo = {'maker': maker, 'bufnr': bufnr('%')}
+
   AssertEqual neomake#config#get('foo', 'default'), 'default'
   let g:neomake = {}
   AssertEqual neomake#config#get('foo', 'default'), 'default'
   let g:neomake = {'foo': 'global'}
   AssertEqual neomake#config#get('foo', 'default'), 'global'
+  AssertEqual neomake#config#get('b:foo', 'default'), 'default'
   let b:neomake = {}
   AssertEqual neomake#config#get('foo', 'default'), 'global'
+  AssertEqual neomake#config#get('b:foo', 'default'), 'default'
+  AssertEqual neomake#config#get('b:foo', 'default', jobinfo), 'maker'
   let b:neomake = {'foo': 'buffer'}
   AssertEqual neomake#config#get('foo', 'default'), 'buffer'
+  AssertEqual neomake#config#get('b:foo', 'default'), 'buffer'
+  AssertEqual neomake#config#get('b:foo', 'default', jobinfo), 'buffer'
 
-  let maker = {'foo': 'maker'}
-  let jobinfo = {'maker': maker, 'bufnr': bufnr('%')}
   AssertEqual neomake#config#get('foo', 'default', jobinfo), 'buffer'
   new
   AssertEqual neomake#config#get('foo', 'default', jobinfo), 'buffer'
@@ -36,16 +42,15 @@ Execute (neomake#config#get/set support list for name):
   call neomake#config#set_buffer(bufnr('%'), ['ft', 'javascript.jsx', 'eslint', 'exe'], 'my_eslint')
   AssertEqual b:neomake, {'ft': {'javascript.jsx': {'eslint': {'exe': 'my_eslint'}}}}
 
-  set filetype=javascript.jsx
+  noautocmd set filetype=javascript.jsx
   AssertEqual neomake#config#get('eslint.exe', 'default'), 'my_eslint'
   AssertEqual neomake#config#get('eslint.exe', 'default', {}), 'default'
-  AssertNeomakeMessage "Using setting eslint.exe='my_eslint' from 'buffer'."
+  AssertNeomakeMessage "Using setting eslint.exe='my_eslint' from 'buffer' (prefix: ['ft', 'javascript.jsx'])."
 
   AssertEqual neomake#config#get(['eslint', 'exe'], 'default'), 'my_eslint'
-  AssertNeomakeMessage "Using setting eslint.exe='my_eslint' from 'buffer'."
+  AssertNeomakeMessage "Using setting eslint.exe='my_eslint' from 'buffer' (prefix: ['ft', 'javascript.jsx'])."
   AssertEqual neomake#config#get(['ft', 'javascript.jsx', 'eslint', 'exe'], 'default', {'bufnr': bufnr('%')}), 'my_eslint'
   AssertNeomakeMessage "Using setting ft.javascript|jsx.eslint.exe='my_eslint' from 'buffer'."
-
   bwipe
 
 Execute (neomake#config#get with filetypes):
@@ -101,12 +106,12 @@ Execute (neomake#config#get with b: prefix, no default and bufnr context):
   AssertEqual neomake#config#get('b:foo'), 'bar'
   unlet b:neomake
 
-  let b:neomake = {'autolint': {'ignore_filetypes': ['startify']}}
-  AssertEqual neomake#config#get('b:autolint.ignore_filetypes'), ['startify']
+  let b:neomake = {'automake': {'ignore_filetypes': ['startify']}}
+  AssertEqual neomake#config#get('b:automake.ignore_filetypes'), ['startify']
 
   let bufnr = bufnr('%')
   new
-  AssertEqual neomake#config#get('b:autolint.ignore_filetypes', [],
+  AssertEqual neomake#config#get('b:automake.ignore_filetypes', [],
   \ {'bufnr': bufnr}), ['startify']
 
   bwipe
@@ -119,8 +124,8 @@ Execute (neomake#config#set):
   AssertEqual g:neomake, {'foo': 'bar'}
   unlet g:neomake
 
-  call neomake#config#set('autolint.ignore_filetypes', ['startify'])
-  AssertEqual g:neomake, {'autolint': {'ignore_filetypes': ['startify']}}
+  call neomake#config#set('automake.ignore_filetypes', ['startify'])
+  AssertEqual g:neomake, {'automake': {'ignore_filetypes': ['startify']}}
 
 Execute (neomake#config#set_buffer):
   new
@@ -129,8 +134,8 @@ Execute (neomake#config#set_buffer):
   AssertEqual b:neomake, {'foo': 'bar'}
   unlet b:neomake
 
-  call neomake#config#set_buffer(bufnr, 'autolint.ignore_filetypes', ['startify'])
-  let expected = {'autolint': {'ignore_filetypes': ['startify']}}
+  call neomake#config#set_buffer(bufnr, 'automake.ignore_filetypes', ['startify'])
+  let expected = {'automake': {'ignore_filetypes': ['startify']}}
   AssertEqual b:neomake, expected
   b#
 
@@ -146,19 +151,32 @@ Execute (neomake#config#set with b: prefix):
   AssertEqual b:neomake, {'foo': 'bar', 'foo2': 'baz'}
   unlet b:neomake
 
-  call neomake#config#set('b:autolint.ignore_filetypes', ['startify'])
-  AssertEqual b:neomake, {'autolint': {'ignore_filetypes': ['startify']}}
+  call neomake#config#set('b:automake.ignore_filetypes', ['startify'])
+  AssertEqual b:neomake, {'automake': {'ignore_filetypes': ['startify']}}
   bwipe!
 
 Execute (neomake#config#get handles Funcref variables):
   new
-  function! NeomakeTestsF()
-  endfunction
-  let Funcref = function('NeomakeTestsF')
+  let s:funcref = function('tr')
 
-  call neomake#config#set('b:function', Funcref)
-  AssertEqual neomake#config#get('b:function'), Funcref
-  AssertEqual neomake#config#get_with_source('b:function'), [Funcref, 'buffer']
+  call neomake#config#set('b:function', s:funcref)
+  AssertEqual neomake#config#get('b:function'), s:funcref
+  AssertEqual neomake#config#get_with_source('b:function'), [s:funcref, 'buffer']
+
+  " Handles bufnr context.
+  let bufnr = bufnr('%')
+  new
+  AssertEqual neomake#config#get('b:function', 'default', {}), 'default'
+  AssertEqual neomake#config#get('b:function', 'default', {'bufnr': bufnr}), s:funcref
+  bwipe
+  bwipe
+
+Execute (neomake#config#get does not return a partial for funcs):
+  new
+  let b:neomake = {}
+  function b:neomake.func()
+  endfunction
+  AssertEqual neomake#config#get('b:func'), get(b:neomake, 'func')
   bwipe
 
 Execute (neomake#config#{un,}set_dict):

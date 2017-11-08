@@ -17,7 +17,7 @@ let ruby_space_errors = 1
 let ruby_fold = 1
 
 " Neomake
-autocmd! BufWritePost,BufEnter * Neomake
+call neomake#configure#automake('w')
 function! neomake#makers#ft#ruby#rubocop()
     let path = getcwd() . '.rubocop.yml'
     let exepath = getcwd() . '/bin/rubocop'
