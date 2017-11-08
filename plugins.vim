@@ -46,7 +46,7 @@ endfunction
 let g:ackprg = "rg --vimgrep"
 
 " tags
-let g:vim_tags_use_vim_dispatch = 0
+let g:vim_tags_use_vim_dispatch = 1
 
 " Snippets
 let g:tm_rails_template_end_ruby_inline = ' -%>'
