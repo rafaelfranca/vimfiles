@@ -43,7 +43,7 @@ function! neomake#makers#ft#ruby#rubocop()
 endfunction
 
 " ack
-let g:ackprg = "ag --vimgrep"
+let g:ackprg = "rg --vimgrep"
 
 " tags
 let g:vim_tags_use_vim_dispatch = 0
