@@ -18,29 +18,19 @@ let ruby_fold = 1
 
 " Neomake
 call neomake#configure#automake('w')
-function! neomake#makers#ft#ruby#rubocop()
-    let path = getcwd() . '.rubocop.yml'
-    let exepath = getcwd() . '/bin/rubocop'
 
-    if filereadable(path)
-      let args = ['--format', 'emacs', '--config', path]
-    else
-      let args = ['--format', 'emacs']
-    endif
+let g:neomake_ruby_enabled_makers = ['mri', 'rubocop', 'reek']
+let rubocop_exepath = getcwd() . '/bin/rubocop'
 
-    if filereadable(exepath)
-      let exe = exepath
-    else
-      let exe = 'rubocop'
-    endif
+if filereadable(rubocop_exepath)
+  let g:neomake_ruby_rubocop_exe = rubocop_exepath
+endif
 
-    return {
-        \ 'exe': exe,
-        \ 'args': args,
-        \ 'errorformat': '%f:%l:%c: %t: %m',
-        \ 'postprocess': function('neomake#makers#ft#ruby#RubocopEntryProcess')
-        \ }
-endfunction
+let rubocop_config = getcwd() . '.rubocop.yml'
+
+if filereadable(rubocop_config)
+  let g:neomake_ruby_rubocop_args = ['--format', 'emacs', '--force-exclusion', '--display-cop-names', '--config', rubocop_config]
+endif
 
 " ack
 let g:ackprg = "rg --vimgrep"
