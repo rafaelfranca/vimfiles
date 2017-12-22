@@ -214,7 +214,7 @@ Execute (Neomake: handle output for removed window):
     " Opening the buffer in another window should process its output.
     exe 'b' bufnr
     AssertNeomakeMessage "Processing pending output for job's buffer in new window."
-    AssertNeomakeMessage 'Creating location list.'
+    AssertNeomakeMessage 'Creating location list.', 3, jobinfo
     AssertEqual len(g:neomake_test_finished), 1
     AssertEqual len(g:neomake_test_countschanged), 1
     AssertEqual map(getloclist(0), 'v:val.text'), ['error message', 'warning', 'error2']
@@ -441,9 +441,9 @@ Execute (NeomakeListJobs with job cancellation):
   if neomake#has_async_support()
     AssertEqual info, [
     \        'make_id | job_id | name/maker',
-    \ printf('     %d |     %d | cmd maker 1', job1.make_id, job1.id),
-    \ printf('     %d |     %d | My custom name (cmd maker 2)', job2.make_id, job2.id),
-    \ printf('     %d |     %d | neomake_%d', job3.make_id, job3.id, job3.id),
+    \ printf('%7d | %6d | cmd maker 1', job1.make_id, job1.id),
+    \ printf('%7d | %6d | My custom name (cmd maker 2)', job2.make_id, job2.id),
+    \ printf('%7d | %6d | neomake_%d', job3.make_id, job3.id, job3.id),
     \ ]
     AssertEqual map(copy(neomake#GetJobs()), 'v:val.as_string()'), [
     \ 'Job '.job1.id.': cmd maker 1',
@@ -662,6 +662,14 @@ Execute (Neomake#Make: error with failing job via jobstart/argv + true):
     AssertEqual len(g:neomake_test_finished), 1
   endif
 
+Execute (Neomake#Make: error with Vim for unknown opt):
+  if has('nvim') || !neomake#has_async_support()
+    NeomakeTestsSkip 'Only for vim-async.'
+  else
+    let maker = {'exe': 'true', 'vim_job_opts': {'invalid-job-opt': 1}}
+    CallNeomake 0, [maker]
+    AssertNeomakeMessage "Failed to start Vim job: ['true']: Vim(let):E475: Invalid argument: invalid-job-opt.", 0
+  endif
 
 Execute (Neomake! for project maker via g:neomake_enabled_makers):
   Save g:neomake_enabled_makers, g:neomake_mycargo_maker

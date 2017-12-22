@@ -6,6 +6,8 @@ let s:short_level_to_name = {0: 'E', 1: 'W', 2: 'V', 3: 'D'}
 
 let s:is_testing = exists('g:neomake_test_messages')
 
+let s:refs_for_profiling = []
+
 function! s:reltime_lastmsg() abort
     if exists('s:last_msg_ts')
         let cur = neomake#compat#reltimefloat()
@@ -239,11 +241,9 @@ function! s:command_maker.fn(jobinfo) dict abort
         let argv = split(&shell) + split(&shellcmdflag)
         let maker.exe = argv[0]
         let maker.args = argv[1:] + [command]
-        let maker._exe_wrapped_in_shell = split(command)[0]
     else
         let maker.exe = command[0]
         let maker.args = command[1:]
-        let maker._exe_wrapped_in_shell = ''
     endif
 
     if get(maker, 'append_file', a:jobinfo.file_mode)
@@ -345,8 +345,16 @@ function! neomake#utils#GetSetting(key, maker, default, ft, bufnr, ...) abort
         endif
     endif
 
+    let Ret2 = s:get_oldstyle_setting(a:key, a:maker, a:default, a:ft, a:bufnr, maker_only)
+    if v:profiling && type(Ret2) == type(function('tr'))
+        let s:refs_for_profiling += [Ret2]
+    endif
+    return Ret2
+endfunction
+
+function! s:get_oldstyle_setting(key, maker, default, ft, bufnr, maker_only) abort
     let maker_name = has_key(a:maker, 'name') ? a:maker.name : ''
-    if maker_only && empty(maker_name)
+    if a:maker_only && empty(maker_name)
         if has_key(a:maker, a:key)
             return get(a:maker, a:key)
         endif
@@ -381,7 +389,7 @@ function! neomake#utils#GetSetting(key, maker, default, ft, bufnr, ...) abort
         return get(a:maker, a:key)
     endif
 
-    let key = maker_only ? maker_name.'_'.a:key : a:key
+    let key = a:maker_only ? maker_name.'_'.a:key : a:key
     " Look for 'neomake_'.key in the buffer and global namespace.
     let bufvar = neomake#compat#getbufvar(a:bufnr, 'neomake_'.key, s:unset)
     if bufvar isnot s:unset
@@ -466,30 +474,32 @@ function! neomake#utils#ExpandArgs(args) abort
     " \\% is expanded to \\file.ext
     " %% becomes %
     " % must be followed with an expansion keyword
-    let isk = &iskeyword
-    set iskeyword=p,h,t,r,e,%,:
-    try
-        let ret = map(a:args,
-                    \ 'substitute(v:val, '
-                    \ . '''\(\%(\\\@<!\\\)\@<!%\%(%\|\%(:[phtre]\+\)*\)\ze\)\w\@!'', '
-                    \ . '''\=(submatch(1) == "%%" ? "%" : expand(submatch(1)))'', '
-                    \ . '''g'')')
-        let ret = map(ret,
-                    \ 'substitute(v:val, '
-                    \ . '''\(\%(\\\@<!\\\)\@<!\~\)'', '
-                    \ . 'expand(''~''), '
-                    \ . '''g'')')
-    finally
-        let &iskeyword = isk
-    endtry
+    let ret = map(a:args,
+                \ 'substitute(v:val, '
+                \ . '''\(\%(\\\@<!\\\)\@<!%\%(%\|\%(:[phtre]\+\)*\)\ze\)\w\@!'', '
+                \ . '''\=(submatch(1) == "%%" ? "%" : expand(submatch(1)))'', '
+                \ . '''g'')')
+    let ret = map(ret,
+                \ 'substitute(v:val, '
+                \ . '''\(\%(\\\@<!\\\)\@<!\~\)'', '
+                \ . 'expand(''~''), '
+                \ . '''g'')')
     return ret
 endfunction
 
+function! neomake#utils#log_exception(error, ...) abort
+    let log_context = a:0 ? a:1 : {'bufnr': bufnr('%')}
+    redraw
+    echom printf('Neomake error in: %s', v:throwpoint)
+    call neomake#utils#ErrorMessage(a:error, log_context)
+    call neomake#utils#DebugMessage(printf('(in %s)', v:throwpoint), log_context)
+endfunction
+
+let s:hook_context_stack = []
 function! neomake#utils#hook(event, context, ...) abort
     if exists('#User#'.a:event)
         let jobinfo = a:0 ? a:1 : (
                     \ has_key(a:context, 'jobinfo') ? a:context.jobinfo : {})
-        let g:neomake_hook_context = a:context
 
         let args = [printf('Calling User autocmd %s with context: %s.',
                     \ a:event, string(map(copy(a:context), "v:key ==# 'jobinfo' ? '…' : v:val")))]
@@ -497,15 +507,32 @@ function! neomake#utils#hook(event, context, ...) abort
             let args += [jobinfo]
         endif
         call call('neomake#utils#LoudMessage', args)
-        if v:version >= 704 || (v:version == 703 && has('patch442'))
-            exec 'doautocmd <nomodeline> User ' . a:event
-        else
-            exec 'doautocmd User ' . a:event
+
+        if exists('g:neomake_hook_context')
+            call add(s:hook_context_stack, g:neomake_hook_context)
         endif
-        unlet g:neomake_hook_context
-    else
-        call neomake#utils#DebugMessage(printf(
-                    \ 'Skipping User autocmd %s: no hooks.', a:event))
+        unlockvar g:neomake_hook_context
+        let g:neomake_hook_context = a:context
+        lockvar 1 g:neomake_hook_context
+        try
+            if v:version >= 704 || (v:version == 703 && has('patch442'))
+                exec 'doautocmd <nomodeline> User ' . a:event
+            else
+                exec 'doautocmd User ' . a:event
+            endif
+        catch
+            call neomake#utils#log_exception(printf(
+                        \ 'Error during User autocmd for %s: %s.',
+                        \ a:event, v:exception), jobinfo)
+        finally
+            if !empty(s:hook_context_stack)
+                unlockvar g:neomake_hook_context
+                let g:neomake_hook_context = remove(s:hook_context_stack, -1)
+                lockvar 1 g:neomake_hook_context
+            else
+                unlet g:neomake_hook_context
+            endif
+        endtry
     endif
 endfunction
 
@@ -647,4 +674,25 @@ function! neomake#utils#highlight_is_defined(group) abort
         return 0
     endif
     return neomake#utils#parse_highlight(a:group) !=# 'cleared'
+endfunction
+
+function! neomake#utils#get_project_root(bufnr) abort
+    let ft = getbufvar(a:bufnr, '&filetype')
+    call neomake#utils#load_ft_makers(ft)
+
+    let project_root_files = ['.git', 'Makefile']
+
+    let ft_project_root_files = 'neomake#makers#ft#'.ft.'#project_root_files'
+    if has_key(g:, ft_project_root_files)
+        let project_root_files = get(g:, ft_project_root_files) + project_root_files
+    endif
+
+    let buf_dir = expand('#'.a:bufnr.':p:h')
+    for fname in project_root_files
+        let project_root = neomake#utils#FindGlobFile(fname, buf_dir)
+        if !empty(project_root)
+            return fnamemodify(project_root, ':h')
+        endif
+    endfor
+    return ''
 endfunction

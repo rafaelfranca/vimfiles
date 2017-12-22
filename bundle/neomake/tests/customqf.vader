@@ -21,7 +21,7 @@ Execute (Displays custom formatted quickfix buffer):
 
 
     AssertEqual getline(1, '$'),
-      \ ['Alph 1:- Line 1 ', 'Alph 2:5 Line 2']
+      \ ['Alph 1:- Line 1', 'Alph 2:5 Line 2']
 
     normal! 0
     " :normal! ignores autocmd's here?
@@ -64,8 +64,8 @@ Execute (Displays custom formatted quickfix buffer):
     wincmd p
 
     AssertEqual getline(1, '$'),
-      \ ['Beta 1:- Line 1 ', 'Beta 2:5 Line 2',
-      \  'Gamm 3:- Line 3 ', 'Gamm 4:5 Line 4']
+      \ ['Beta 1:- Line 1', 'Beta 2:5 Line 2',
+      \  'Gamm 3:- Line 3', 'Gamm 4:5 Line 4']
 
     normal! G0
     doautocmd CursorMoved
@@ -82,23 +82,22 @@ Execute (Sets quickfix title (location list)):
   try
     new
     set ft=neomake_tests
-    " Workaround to have make info cleaned (fixed in pcall-wip).
-    let b:neomake_tempfile_enabled = 1
+    let bufnr = bufnr('%')
 
-    RunNeomake echo_maker true
+    file custom_file
+    RunNeomake error_maker true
 
     " Location list entry contains marker.
-    let valid = has('patch-8.0.0580')
     AssertEqual getloclist(0), [
-    \ {'lnum': 0, 'bufnr': 0, 'col': 0, 'valid': valid, 'vcol': 0, 'nr': -1,
-    \  'type': 'W', 'pattern': '',
-    \  'text': 'neomake_tests_echo_maker nmcfg:{''short'': ''echo'', ''name'': ''echo_maker''}'}]
+    \ {'lnum': 1, 'bufnr': bufnr, 'col': 0, 'valid': 1, 'vcol': 0, 'nr': -1,
+    \  'type': 'E', 'pattern': '',
+    \  'text': 'error_msg_1 nmcfg:{''short'': ''errmkr'', ''name'': ''error_maker''}'}]
 
     lopen
-    AssertEqual w:quickfix_title, 'Neomake[file]: buf:0 (echo_maker)'
+    AssertEqual w:quickfix_title, 'Neomake[file]: custom_file (error_maker)'
     normal! G0
     doautocmd CursorMoved
-    AssertEqual expand('<cWORD>'), 'neomake_tests_echo_maker'
+    AssertEqual expand('<cWORD>'), 'error_msg_1'
 
     lclose
     bwipe
@@ -231,8 +230,39 @@ Execute (neomake#quickfix#FormatQuickfix handles entries with config in text):
         \   'text': 'Text with marker nmcfg:{"name": "a", "short": "a"} nmcfg:{"name": "b", "short": "b"}',
         \}])
     lopen
-    call neomake#quickfix#FormatQuickfix()
-    AssertEqual getline(1), 'b   Text with marker nmcfg:{"name": "a", "short": "a"} '
+    AssertEqual getline(1), 'b   Text with marker nmcfg:{"name": "a", "short": "a"}'
+    lclose
+    bwipe
+  finally
+    call neomake#quickfix#disable()
+  endtry
+
+Execute (neomake#quickfix#FormatQuickfix handles entries without cfg (ending with curly brace)):
+  call neomake#quickfix#enable()
+  try
+    new
+    call setloclist(0, [
+    \ {'text': 'text1 nmcfg:{"name": "maker", "short": "makr"}'},
+    \ {'text': " 'something': 'X'}"}
+    \ ])
+    lopen
+    AssertEqual getline(1), "makr   text1"
+    AssertEqual getline(2), "makr    'something': 'X'}"
+    lclose
+    bwipe
+  finally
+    call neomake#quickfix#disable()
+  endtry
+
+Execute (neomake#quickfix#FormatQuickfix logs exception from nmcfg)):
+  call neomake#quickfix#enable()
+  try
+    new
+    call setloclist(0, [{'text': 'text1 nmcfg:{undefined}'}])
+    lopen
+    AssertEqual getline(1), '????   text1 nmcfg:{undefined}'
+    AssertNeomakeMessage 'Error when evaluating nmcfg ({undefined}): Vim(let):E121: Undefined variable: undefined.', 0
+    AssertNeomakeMessage '\v\(in function neomake#quickfix#FormatQuickfix, line \d+\)', 3
     lclose
     bwipe
   finally
@@ -249,7 +279,7 @@ Execute (neomake#quickfix#FormatQuickfix reuses signs):
         \}])
     lopen
     let loclist_bufnr = bufnr('%')
-    AssertEqual getline(1), 'b 1:- Text with marker '
+    AssertEqual getline(1), 'b 1:- Text with marker'
     let bufnr = bufnr('%')
     AssertNeomakeMessage 'Placing sign: sign place 5000 line=1 name=neomake_file_err buffer='.bufnr.'.', 3
 

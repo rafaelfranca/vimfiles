@@ -145,8 +145,7 @@ Execute (Neomake with non-existing maker (configured)):
   AssertNeomakeMessage "Calling Make with options {'ft': 'myft', 'file_mode': 1}.", 3, log_context
   AssertNeomakeMessage 'Maker not found (for filetype myft): nonexisting_custom.', 0, log_context
   AssertNeomakeMessage 'Nothing to make: no enabled file mode makers (filetype=myft).', 3, log_context
-  AssertNeomakeMessage 'Cleaning make info.', 3, log_context
-  AssertEqual len(g:neomake_test_messages), 4
+  AssertEqual len(g:neomake_test_messages), 3
   AssertEqual make_id_before + 1, neomake#GetStatus().last_make_id
   bwipe
 
@@ -595,3 +594,53 @@ Execute (Neomake/Neomake! run ft maker in project mode):
 
   AssertEqual map(copy(g:neomake_test_jobfinished), 'v:val.jobinfo.file_mode'), [1, 0]
   bwipe
+
+Execute (Maker can pass opts for jobstart/job_start):
+  if NeomakeAsyncTestsSetup()
+    if !has('nvim') && !has('patch-8.0.0902')
+      NeomakeTestsSkip 'Requires patch 8.0.0902 for Vim.'
+    else
+      let maker = {'exe': 'sh', 'args': ['-c', 'echo $TERM']}
+      if has('nvim')
+        let maker.nvim_job_opts = {
+        \ 'pty': 1,
+        \ 'TERM': 'custom-term',
+        \ }
+      else
+        let maker.vim_job_opts = {
+        \ 'pty': 1,
+        \ 'env': {'TERM': 'custom-term'},
+        \ }
+      endif
+
+      CallNeomake 0, [maker]
+      AssertEqual getqflist(), [
+      \ {'lnum': 0, 'bufnr': 0, 'col': 0, 'valid': 0, 'vcol': 0, 'nr': -1,
+      \  'type': 'W', 'pattern': '', 'text': 'custom-term'}]
+    endif
+  endif
+
+Execute (Maker can override output handler via opts for jobstart/job_start):
+  if NeomakeAsyncTestsSetup()
+    let s:output = []
+    function s:on_stdout(job_or_channel, output, ...)
+      let lines = has('nvim') ? a:output[:-2] : split(a:output, '\n')
+      let s:output += lines
+    endfunction
+
+    let maker = {'exe': 'printf', 'args': ['%s\n', 'line1', 'line2']}
+
+    if has('nvim')
+      let maker.nvim_job_opts = {
+      \ 'on_stdout': function('s:on_stdout'),
+      \ }
+    else
+      let maker.vim_job_opts = {
+      \ 'out_cb': function('s:on_stdout'),
+      \ }
+    endif
+
+    CallNeomake 0, [maker]
+    AssertEqual getqflist(), []
+    AssertEqual s:output, ['line1', 'line2']
+  endif
