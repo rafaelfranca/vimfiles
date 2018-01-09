@@ -14,7 +14,7 @@ let g:gist_open_browser_after_post = 1
 " vim-ruby
 " let ruby_operators = 1 " this option is bugged
 let ruby_space_errors = 1
-let ruby_fold = 1
+" let ruby_fold = 1 " this option make everything slow
 
 " Neomake
 call neomake#configure#automake('w')
