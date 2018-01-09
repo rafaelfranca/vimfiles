@@ -42,3 +42,5 @@ let g:vim_tags_auto_generate = 0
 " Snippets
 let g:tm_rails_template_end_ruby_inline = ' -%>'
 
+"airline
+let g:airline_highlighting_cache = 1
