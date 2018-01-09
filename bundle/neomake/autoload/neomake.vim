@@ -26,6 +26,7 @@ let s:action_queue_timer_timeouts = get(g:, 'neomake_action_queue_timeouts', {1:
 let s:current_errors = {'project': {}, 'file': {}}
 let s:maker_defaults = {
             \ 'buffer_output': 1,
+            \ 'output_stream': 'both',
             \ 'remove_invalid_entries': 0}
 " List of pending outputs by job ID.
 let s:pending_outputs = {}
@@ -318,7 +319,6 @@ function! s:MakeJob(make_id, options) abort
         \ 'bufnr': a:options.bufnr,
         \ 'file_mode': a:options.file_mode,
         \ 'ft': a:options.ft,
-        \ 'output_stream': get(a:options, 'output_stream', get(a:options.maker, 'output_stream', 'both')),
         \ }, a:options))
 
     let maker = jobinfo.maker
@@ -331,6 +331,11 @@ function! s:MakeJob(make_id, options) abort
         call s:handle_get_list_entries(jobinfo)
         return jobinfo
     endif
+
+    call extend(jobinfo, {
+        \ 'output_stream': a:options.maker.output_stream,
+        \ 'buffer_output': a:options.maker.buffer_output,
+        \ }, 'keep')
 
     let [cd_error, cwd, cd_back_cmd] = s:cd_to_jobs_cwd(jobinfo)
     if !empty(cd_error)
@@ -364,11 +369,20 @@ function! s:MakeJob(make_id, options) abort
         lockvar 1 maker
         if s:async
             if has('nvim')
-                let opts = {
-                    \ 'on_stdout': function('s:nvim_output_handler'),
-                    \ 'on_stderr': function('s:nvim_output_handler'),
-                    \ 'on_exit': function('s:nvim_exit_handler')
-                    \ }
+                if has('nvim-0.2.3') && jobinfo.buffer_output
+                    let opts = {
+                                \ 'stdout_buffered': 1,
+                                \ 'stderr_buffered': 1,
+                                \ 'on_exit': function('s:nvim_exit_handler_buffered'),
+                                \ }
+                    let jobinfo.jobstart_opts = opts
+                else
+                    let opts = {
+                                \ 'on_stdout': function('s:nvim_output_handler'),
+                                \ 'on_stderr': function('s:nvim_output_handler'),
+                                \ 'on_exit': function('s:nvim_exit_handler'),
+                                \ }
+                endif
                 if has_key(maker, 'nvim_job_opts')
                     call extend(opts, maker.nvim_job_opts)
                 endif
@@ -494,7 +508,7 @@ function! s:MakeJob(make_id, options) abort
 endfunction
 
 let s:maker_base = {}
-let s:command_maker_base = {}
+let s:command_maker_base = copy(g:neomake#core#command_maker_base)
 " Check if a temporary file is used, and set it in s:make_info in case it is.
 function! s:command_maker_base._get_tempfilename(jobinfo) abort dict
     if has_key(self, 'supports_stdin')
@@ -664,20 +678,13 @@ endfunction
 function! s:command_maker_base._get_argv(jobinfo) abort dict
     let args = self.args
     let args_is_list = type(self.args) == type([])
-
-    " Append file?  (defaults to jobinfo.file_mode, project/global makers should set it to 0)
-    let append_file = neomake#utils#GetSetting('append_file', self, a:jobinfo.file_mode, a:jobinfo.ft, a:jobinfo.bufnr)
-    " Use/generate a filename?  (defaults to 1 if tempfile_name is set)
-    let uses_filename = append_file || neomake#utils#GetSetting('uses_filename', self, has_key(self, 'tempfile_name'), a:jobinfo.ft, a:jobinfo.bufnr)
-    if append_file || uses_filename
-        let filename = self._get_fname_for_buffer(a:jobinfo)
-        if append_file
-            let args = copy(args)
-            if args_is_list
-                call add(args, filename)
-            else
-                let args .= (empty(args) ? '' : ' ').fnameescape(filename)
-            endif
+    let filename = self._get_fname_for_args(a:jobinfo)
+    if !empty(filename)
+        let args = copy(args)
+        if args_is_list
+            call add(args, filename)
+        else
+            let args .= (empty(args) ? '' : ' ').fnameescape(filename)
         endif
     endif
     return neomake#compat#get_argv(self.exe, args, args_is_list)
@@ -1748,13 +1755,18 @@ function! s:ProcessEntries(jobinfo, entries, ...) abort
     call s:clean_for_new_make(s:make_info[a:jobinfo.make_id])
 
     let counts_changed = 0
-    let ignored_signs = []
     let maker_type = file_mode ? 'file' : 'project'
     let do_highlight = get(g:, 'neomake_highlight_columns', 1)
                 \ || get(g:, 'neomake_highlight_lines', 0)
     let signs_by_bufnr = {}
-    let skipped_without_bufnr = 0
+    let debug = neomake#utils#get_verbosity(a:jobinfo) >= 3 || !empty(get(g:, 'neomake_logfile'))
+    let entries_with_lnum_by_bufnr = {}
+    let skipped_without_bufnr = []
+    let skipped_without_lnum = []
+
+    let idx = -1
     for entry in a:entries
+        let idx += 1
         if !file_mode
             if neomake#statusline#AddQflistCount(entry)
                 let counts_changed = 1
@@ -1762,7 +1774,9 @@ function! s:ProcessEntries(jobinfo, entries, ...) abort
         endif
 
         if !entry.bufnr
-            let skipped_without_bufnr += 1
+            if debug
+                let skipped_without_bufnr += [idx]
+            endif
             continue
         endif
 
@@ -1772,40 +1786,57 @@ function! s:ProcessEntries(jobinfo, entries, ...) abort
             endif
         endif
 
-        " Track all errors by buffer and line
-        let s:current_errors[maker_type][entry.bufnr] = get(s:current_errors[maker_type], entry.bufnr, {})
-        let s:current_errors[maker_type][entry.bufnr][entry.lnum] = get(
-            \ s:current_errors[maker_type][entry.bufnr], entry.lnum, [])
-        call add(s:current_errors[maker_type][entry.bufnr][entry.lnum], entry)
+        if !entry.lnum
+            if debug
+                let skipped_without_lnum += [idx]
+            endif
+            continue
+        endif
 
-        if g:neomake_place_signs
-            if entry.lnum is 0
-                let ignored_signs += [entry]
-            else
-                if !has_key(signs_by_bufnr, entry.bufnr)
-                    let signs_by_bufnr[entry.bufnr] = []
-                endif
-                call add(signs_by_bufnr[entry.bufnr], entry)
+        if !has_key(entries_with_lnum_by_bufnr, entry.bufnr)
+            let entries_with_lnum_by_bufnr[entry.bufnr] = []
+            let signs_by_bufnr[entry.bufnr] = []
+            if !exists('s:current_errors[maker_type][entry.bufnr]')
+                let s:current_errors[maker_type][entry.bufnr] = {}
             endif
         endif
-        if do_highlight
-            call neomake#highlights#AddHighlight(entry, maker_type)
+
+        if do_highlight || g:neomake_place_signs
+            " NOTE: only lnum/type required for signs.  Similar for do_highlight?!
+            call add(entries_with_lnum_by_bufnr[entry.bufnr], entry)
+        endif
+
+        " Track all errors by buffer and line
+        if !has_key(s:current_errors[maker_type][entry.bufnr], entry.lnum)
+            let s:current_errors[maker_type][entry.bufnr][entry.lnum] = [entry]
+        else
+            call add(s:current_errors[maker_type][entry.bufnr][entry.lnum], entry)
         endif
     endfor
 
-    for [bufnr, entries] in items(signs_by_bufnr)
-        call neomake#signs#PlaceSigns(bufnr, entries, maker_type)
+    " Handle placing signs and highlights.
+    for [b, entries] in items(entries_with_lnum_by_bufnr)
+        if g:neomake_place_signs
+            call neomake#signs#PlaceSigns(b, entries, maker_type)
+        endif
+        if do_highlight
+            for entry in entries
+                call neomake#highlights#AddHighlight(entry, maker_type)
+            endfor
+        endif
     endfor
 
-    if !empty(ignored_signs)
-        call neomake#utils#DebugMessage(printf(
-                    \ 'Could not place signs for %d entries without line number: %s.',
-                    \ len(ignored_signs), string(ignored_signs)))
+    if !empty(skipped_without_bufnr)
+        call neomake#utils#DebugMessage(printf('Skipped %d entries without bufnr: %s.',
+                    \ len(skipped_without_bufnr),
+                    \ string(map(skipped_without_bufnr, 'a:entries[v:val]'))), a:jobinfo)
     endif
 
-    if !empty(skipped_without_bufnr)
-        call neomake#utils#DebugMessage(printf('Skipped %d entries without bufnr.',
-                    \ skipped_without_bufnr), a:jobinfo)
+    if !empty(skipped_without_lnum)
+        call neomake#utils#DebugMessage(printf(
+                    \ 'Could not place signs for %d entries without line number: %s.',
+                    \ len(skipped_without_lnum),
+                    \ string(map(skipped_without_lnum, 'a:entries[v:val]'))), a:jobinfo)
     endif
 
     if !counts_changed
@@ -2177,6 +2208,28 @@ else
     " @vimlint(EVL103, 0, a:timer)
 endif
 
+" Exit handler for buffered output with Neovim.
+" In this case the output gets stored on the jobstart-options dict.
+" @vimlint(EVL103, 1, a:event_type)
+function! s:nvim_exit_handler_buffered(job_id, data, event_type) abort
+    let jobinfo = get(s:jobs, get(s:map_job_ids, a:job_id, -1), {})
+    if empty(jobinfo)
+        call neomake#utils#DebugMessage(printf('exit: job not found: %d.', a:job_id))
+        return
+    endif
+
+    for stream in ['stdout', 'stderr']
+        if has_key(jobinfo.jobstart_opts, stream)
+            let output = copy(jobinfo.jobstart_opts[stream])
+            call map(output, "substitute(v:val, '\\r$', '', '')")
+            call s:output_handler(jobinfo, output, stream)
+        endif
+    endfor
+
+    call s:exit_handler(jobinfo, a:data)
+endfunction
+" @vimlint(EVL103, 0, a:event_type)
+
 " @vimlint(EVL103, 1, a:event_type)
 function! s:nvim_exit_handler(job_id, data, event_type) abort
     let jobinfo = get(s:jobs, get(s:map_job_ids, a:job_id, -1), {})
@@ -2296,7 +2349,7 @@ function! s:output_handler(jobinfo, data, event_type) abort
         let jobinfo[a:event_type] = a:data
     endif
 
-    if !jobinfo.maker.buffer_output || last_event_type !=# a:event_type
+    if !jobinfo.buffer_output || last_event_type !=# a:event_type
         let lines = jobinfo[a:event_type][:-2]
         let jobinfo[a:event_type] = jobinfo[a:event_type][-1:]
 
@@ -2481,13 +2534,14 @@ endfunction
 function! neomake#ShCommand(bang, sh_command, ...) abort
     let maker = neomake#utils#MakerFromCommand(a:sh_command)
     let maker.name = 'sh: '.a:sh_command
-    let maker.buffer_output = !a:bang
     let maker.errorformat = '%m'
     let maker.default_entry_type = ''
     let options = {
                 \ 'enabled_makers': [maker],
                 \ 'file_mode': 0,
-                \ 'output_stream': 'both'}
+                \ 'output_stream': 'both',
+                \ 'buffer_output': !a:bang,
+                \ }
     if a:0
         call extend(options, a:1)
     endif

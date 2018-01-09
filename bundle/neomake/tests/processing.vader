@@ -215,6 +215,8 @@ Execute (Output gets not processed while in loclist):
   endif
 
 Execute (Unbuffered output handled correctly (loclist)):
+  " XXX: flaky?! (maker2 not exited in https://circleci.com/gh/neomake/neomake/4960).
+  " Also for qflist one below (https://circleci.com/gh/neomake/neomake/4971).
   if NeomakeAsyncTestsSetup()
     " Produce intersected output: 1_1, 2_1, 1_2, 2_2, …
     let s:tmpfile1 = tempname()
@@ -447,11 +449,11 @@ Execute (Handle finished job that got canceled (#1158)):
 Execute (Job does not get restarted when canceled):
   if NeomakeAsyncTestsSetup()
     let maker = NeomakeTestsCommandMaker('mymaker', 'echo output; sleep .1; echo output2')
-    let jobinfo = neomake#Make({'enabled_makers': [maker]})[0]
+    let jobinfo = neomake#Make({'enabled_makers': [maker], 'buffer_output': 0})[0]
     NeomakeTestsWaitForMessage "stdout: mymaker: ['output', ''].", 3, jobinfo
     call neomake#CancelJob(jobinfo.id)
 
-    let jobinfo2 = neomake#Make(1, [maker])[0]
+    let jobinfo2 = neomake#Make({'enabled_makers': [maker], 'buffer_output': 0})[0]
     NeomakeTestsWaitForFinishedJobs
 
     AssertNeomakeMessage "stdout: mymaker: ['output', ''].", 3, jobinfo2
@@ -459,11 +461,13 @@ Execute (Job does not get restarted when canceled):
 
     AssertEqual len(g:neomake_test_finished), 1
     AssertEqual len(g:neomake_test_jobfinished), 1
-"     AssertEqual len(g:neomake_test_countschanged), 0
-    AssertEqual len(g:neomake_test_countschanged), 1
+    AssertEqual len(g:neomake_test_countschanged), 3
   endif
 
 Execute (100 lines of output should not get processed one by one):
+  Save g:neomake_verbose
+  let g:neomake_verbose = 3
+
   " This would be the case when using Vim's 'nl' mode.
   call g:NeomakeSetupAutocmdWrappers()
   let maker = NeomakeTestsCommandMaker('echo_100', 'i=100; while ((i--)); do echo $i; done')
@@ -472,7 +476,7 @@ Execute (100 lines of output should not get processed one by one):
   NeomakeTestsWaitForFinishedJobs
   let c = g:neomake_test_countschanged
   Assert len(c) < 50, 'There were 50+ count changes: '.len(c)
-  AssertNeomakeMessage '\v^Skipped \d+ entries without bufnr\.'
+  AssertNeomakeMessage '\v^Skipped \d+ entries without bufnr: .*\.'
 
 Execute (Mixed newlines get handled correctly):
   let maker = {
