@@ -31,6 +31,7 @@ Plug 'vim-airline/vim-airline-themes'
 Plug 'neomake/neomake'
 Plug 'SirVer/ultisnips'
 Plug 'rafaelfranca/vim-snippets'
+Plug 'tpope/vim-rhubarb'
 
 " All of your Plugins must be added before the following line
 call plug#end()
