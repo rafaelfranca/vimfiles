@@ -68,11 +68,10 @@ else
             try
                 let object = eval(a:json)
             catch
-                " malformed JSON
-                let object = ''
+                throw 'Neomake: Failed to parse JSON input'
             endtry
         else
-            let object = ''
+            throw 'Neomake: Failed to parse JSON input'
         endif
 
         return object
@@ -91,21 +90,23 @@ if exists('*uniq')
         return uniq(a:l)
     endfunction
 else
-    " From ingo#collections#UniqueSorted.
     function! neomake#compat#uniq(l) abort
-        if len(a:l) < 2
+        let n = len(a:l)
+        if n < 2
             return a:l
         endif
-
-        let l:previousItem = a:l[0]
-        let l:result = [a:l[0]]
-        for l:item in a:l[1:]
-            if l:item !=# l:previousItem
-                call add(l:result, l:item)
-                let l:previousItem = l:item
+        let prev = a:l[0]
+        let idx = 1
+        while idx < n
+            if a:l[idx] ==# prev && type(a:l[idx]) == type(prev)
+                call remove(a:l, idx)
+                let n -= 1
+            else
+                let prev = a:l[idx]
+                let idx += 1
             endif
-        endfor
-        return l:result
+        endwhile
+        return a:l
     endfunction
 endif
 
@@ -163,17 +164,18 @@ if has('nvim')
     if neomake#utils#IsRunningWindows()
         function! neomake#compat#get_argv(exe, args, args_is_list) abort
             if a:args_is_list
+                let args = neomake#utils#ExpandArgs(a:args)
                 " Convert it to a string to handle PATHEXT (e.g. .cmd files).
                 " This might be skipped when `exepath(a:exe)[-4:] == '.exe'`,
                 " but not worth it probably (and more fragile in the end?!).
-                return join(map(copy([a:exe] + a:args), 'neomake#utils#shellescape(v:val)'))
+                return join(map(copy([a:exe] + args), 'neomake#utils#shellescape(v:val)'))
             endif
             return a:exe . (empty(a:args) ? '' : ' '.a:args)
         endfunction
     else
         function! neomake#compat#get_argv(exe, args, args_is_list) abort
             if a:args_is_list
-                return [a:exe] + a:args
+                return [a:exe] + neomake#utils#ExpandArgs(a:args)
             endif
             return a:exe . (empty(a:args) ? '' : ' '.a:args)
         endfunction
@@ -184,11 +186,12 @@ elseif neomake#has_async_support()  " Vim-async.
         function! neomake#compat#get_argv(exe, args, args_is_list) abort
             let prefix = &shell.' '.&shellcmdflag.' '
             if a:args_is_list
-                if a:exe ==# &shell && get(a:args, 0) ==# &shellcmdflag
+                let args = neomake#utils#ExpandArgs(a:args)
+                if a:exe ==# &shell && get(args, 0) ==# &shellcmdflag
                     " Remove already existing &shell/&shellcmdflag from e.g. NeomakeSh.
-                    let argv = join(map(copy(a:args[1:]), 'neomake#utils#shellescape(v:val)'))
+                    let argv = join(map(copy(args[1:]), 'neomake#utils#shellescape(v:val)'))
                 else
-                    let argv = join(map(copy([a:exe] + a:args), 'neomake#utils#shellescape(v:val)'))
+                    let argv = join(map(copy([a:exe] + args), 'neomake#utils#shellescape(v:val)'))
                 endif
             else
                 let argv = a:exe . (empty(a:args) ? '' : ' '.a:args)
@@ -201,7 +204,7 @@ elseif neomake#has_async_support()  " Vim-async.
     else
         function! neomake#compat#get_argv(exe, args, args_is_list) abort
             if a:args_is_list
-                return [a:exe] + a:args
+                return [a:exe] + neomake#utils#ExpandArgs(a:args)
             endif
             " Use a shell to handle argv properly (Vim splits at spaces).
             let argv = a:exe . (empty(a:args) ? '' : ' '.a:args)
@@ -212,7 +215,8 @@ else
     " Vim (synchronously), via system().
     function! neomake#compat#get_argv(exe, args, args_is_list) abort
         if a:args_is_list
-            return join(map(copy([a:exe] + a:args), 'neomake#utils#shellescape(v:val)'))
+            let args = neomake#utils#ExpandArgs(a:args)
+            return join(map(copy([a:exe] + args), 'neomake#utils#shellescape(v:val)'))
         endif
         return a:exe . (empty(a:args) ? '' : ' '.a:args)
     endfunction
