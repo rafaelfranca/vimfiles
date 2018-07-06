@@ -1,6 +1,0 @@
-[run]
-plugins = covimerage
-data_file = .coverage.covimerage
-[report]
-include = autoload/*,plugin/*,syntax/*,tests/*
-omit = tests/fixtures/vim/*
