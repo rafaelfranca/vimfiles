@@ -53,7 +53,7 @@ imap <c-x><c-f> <plug>(fzf-complete-path)
 imap <c-x><c-j> <plug>(fzf-complete-file-ag)
 imap <c-x><c-l> <plug>(fzf-complete-line)
 
-
+noremap <Leader>s :update<CR>
 nnoremap <leader>j :Buffers<cr>
 nnoremap <leader><C-p> :Files<cr>
 nnoremap <leader><C-a> :GFiles?<cr>
