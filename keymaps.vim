@@ -60,3 +60,7 @@ nnoremap <leader><C-a> :GFiles?<cr>
 nnoremap <C-p> :GFiles<cr>
 nnoremap <leader>t :Tags<cr>
 nnoremap <leader>T :BTags<cr>
+
+noremap <Leader>w :tabnew<cr>
+vmap <Leader>y "+y
+nmap <Leader>p "+p
